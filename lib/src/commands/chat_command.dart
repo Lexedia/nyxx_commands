@@ -291,6 +291,9 @@ class ChatCommand
   /// The full path to the file that contains this command.
   late final String filePath;
 
+  /// The comment description of this command.
+  late final String? commentDescription;
+
   @override
   final CommandOptions options;
 
@@ -385,6 +388,7 @@ class ChatCommand
 
     lines = _functionData.lines;
     filePath = _functionData.filePath;
+    commentDescription = _functionData.commentDescription;
   }
 
   @override
