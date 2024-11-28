@@ -208,10 +208,6 @@ Iterable<CompileTimeFunctionData> getFunctionData(Iterable<InvocationExpression>
     String? documentationComment =
         unparsedDocumentationComment == null ? null : stripComment(unparsedDocumentationComment);
 
-    print('Dw');
-
-    // String? commentDescription = parent;
-
     result.add(
       CompileTimeFunctionData(
         id.argumentList.arguments.first,
