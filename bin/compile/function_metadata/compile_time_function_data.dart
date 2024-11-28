@@ -29,7 +29,10 @@ class CompileTimeFunctionData {
   /// The full path to the file that contains this function.
   final String filePath;
 
-  const CompileTimeFunctionData(this.id, this.parametersData, this.lines, this.filePath);
+  /// The comment description of this function.
+  final String? commentDescription;
+
+  const CompileTimeFunctionData(this.id, this.parametersData, this.lines, this.filePath, [this.commentDescription]);
 
   @override
   String toString() => 'CompileTimeFunctionData[id=$id, parameters=$parametersData]';

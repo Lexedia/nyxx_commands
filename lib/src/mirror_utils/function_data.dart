@@ -14,7 +14,9 @@ class FunctionData {
 
   final String filePath;
 
-  const FunctionData(this.parametersData, this.lines, this.filePath);
+  final String? commentDescription;
+
+  const FunctionData(this.parametersData, this.lines, this.filePath, [this.commentDescription]);
 }
 
 class ParameterData<T> {

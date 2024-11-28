@@ -355,7 +355,13 @@ void writeFunctionData(
 
     result.write('],');
     result.write('${function.lines},');
-    result.write("'${function.filePath}',),");
+    result.write("'${function.filePath}',");
+
+    if (function.commentDescription != null) {
+      result.write("'''${function.commentDescription}''',");
+    }
+
+    result.write('),');
   }
 
   result.write('};');

@@ -15,6 +15,7 @@
 import 'dart:math';
 
 import 'package:analyzer/dart/ast/ast.dart';
+import 'package:analyzer/dart/ast/token.dart';
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/source/line_info.dart';
@@ -201,17 +202,114 @@ Iterable<CompileTimeFunctionData> getFunctionData(Iterable<InvocationExpression>
 
     Uri sourceUri = parent.thisOrAncestorOfType<CompilationUnit>()!.declaredElement!.source.uri;
 
+    String? unparsedDocumentationComment = getCommentContents(
+        parent.thisOrAncestorOfType<VariableDeclaration>()?.documentationComment);
+
+    String? documentationComment =
+        unparsedDocumentationComment == null ? null : stripComment(unparsedDocumentationComment);
+
+    print('Dw');
+
+    // String? commentDescription = parent;
+
     result.add(
       CompileTimeFunctionData(
         id.argumentList.arguments.first,
         parameterData,
         (startLine, endLine),
         sourceUri.toString(),
+        documentationComment,
       ),
     );
   }
 
   return result;
+}
+
+String? getCommentContents(Comment? comment) {
+  if (comment == null) {
+    return null;
+  }
+
+  Token? token = comment.beginToken;
+
+  var sb = StringBuffer();
+
+  do {
+    sb.writeln(token!.lexeme);
+    token = token.next;
+  } while (token != null && token != comment.endToken);
+
+  return sb.toString();
+}
+
+const String _tripleSlash = '///';
+
+const String _slashStarStar = '/**';
+
+const String _starSlash = '*/';
+
+String stripComment(String str) {
+  final RegExp leadingWhiteSpace = RegExp(r'^([ \t]*)[^ ]');
+  Iterable<String> stripCommonWhitespace(String str) sync* {
+    if (str.isEmpty) return;
+    final lines = str.split('\n');
+    int? minimumSeen;
+
+    for (final line in lines) {
+      if (line.isNotEmpty) {
+        final match = leadingWhiteSpace.firstMatch(line);
+        if (match != null) {
+          var groupLength = match.group(1)!.length;
+          if (minimumSeen == null || groupLength < minimumSeen) {
+            minimumSeen = groupLength;
+          }
+        }
+      }
+    }
+    minimumSeen ??= 0;
+    for (final line in lines) {
+      if (line.length >= minimumSeen) {
+        yield line.substring(minimumSeen);
+      } else {
+        yield '';
+      }
+    }
+  }
+
+  if (str.isEmpty) return '';
+  final buf = StringBuffer();
+
+  if (str.startsWith(_tripleSlash)) {
+    for (final line in stripCommonWhitespace(str)) {
+      if (line.startsWith('$_tripleSlash ')) {
+        buf.writeln(line.substring(4));
+      } else if (line.startsWith(_tripleSlash)) {
+        buf.writeln(line.substring(3));
+      } else {
+        buf.writeln(line);
+      }
+    }
+  } else {
+    var cStyle = false;
+    if (str.startsWith(_slashStarStar)) {
+      str = str.substring(3);
+      cStyle = true;
+    }
+    if (str.endsWith(_starSlash)) {
+      str = str.substring(0, str.length - 2);
+    }
+    for (final line in stripCommonWhitespace(str)) {
+      if (cStyle && line.startsWith('* ')) {
+        buf.writeln(line.substring(2));
+      } else if (cStyle && line.startsWith('*')) {
+        buf.writeln(line.substring(1));
+      } else {
+        buf.writeln(line);
+      }
+    }
+  }
+  return buf.toString().trim();
 }
 
 /// Extract the object referenced or created by an annotation.
