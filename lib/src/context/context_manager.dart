@@ -45,10 +45,11 @@ class ContextManager {
     StringView contentView,
     String prefix,
   ) async {
-    ChatCommand command =
-        commands.getCommand(contentView) ?? (throw CommandNotFoundException(contentView));
-
     TextChannel channel = await message.channel.get() as TextChannel;
+
+    ChatCommand command =
+        commands.getCommand(contentView, channel is GuildTextChannel ? channel.guildId : null) ?? (throw CommandNotFoundException(contentView));
+
     User user = message.author as User;
 
     Guild? guild;

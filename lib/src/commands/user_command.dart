@@ -86,4 +86,9 @@ class UserCommand
 
     _postCallController.add(context);
   }
+  
+  @override
+  CommandRegisterable<UserContext> copyWith() {
+    throw UnimplementedError();
+  }
 }

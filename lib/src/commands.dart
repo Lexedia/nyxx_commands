@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:nyxx/nyxx.dart';
+import 'package:meta/meta.dart';
 
 import 'checks/checks.dart';
 import 'checks/guild.dart';
@@ -138,10 +139,15 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   final Map<String, UserCommand> _userCommands = {};
   final Map<String, MessageCommand> _messageCommands = {};
   final Map<String, ChatCommandComponent> _chatCommands = {};
+  final Map<String, ChatCommandComponent> _dynamicChatCommands = {};
 
   @override
-  Iterable<CommandRegisterable> get children =>
-      {..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values};
+  Iterable<CommandRegisterable> get children => [
+        ..._userCommands.values,
+        ..._messageCommands.values,
+        ..._chatCommands.values,
+        ..._dynamicChatCommands.values
+      ];
 
   @override
   String get name => 'Commands';
@@ -149,7 +155,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   /// A list of commands registered by this [CommandsPlugin] to the Discord API.
   final List<ApplicationCommand> registeredCommands = [];
 
-  final Set<NyxxGateway> _attachedClients = {};
+  @internal
+  final Set<NyxxGateway> attachedClients = {};
 
   /// Create a new [CommandsPlugin].
   CommandsPlugin({
@@ -168,7 +175,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
   @override
   Future<void> afterConnect(NyxxGateway client) async {
-    _attachedClients.add(client);
+    attachedClients.add(client);
 
     client.onMessageComponentInteraction
         .map((event) => event.interaction)
@@ -273,7 +280,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
     ApplicationCommand applicationCommand,
   ) {
     List<InteractionOption> options = interaction.data.options ?? [];
-    ChatCommandComponent command = _chatCommands[applicationCommand.name]!;
+    ChatCommandComponent command = _chatCommands[applicationCommand.name] ??
+        _dynamicChatCommands['${interaction.guildId}-${applicationCommand.name}']!;
 
     while (command is! ChatCommand) {
       assert(options.isNotEmpty);
@@ -290,10 +298,11 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   @override
   void beforeClose(NyxxGateway client) {
     registeredCommands.removeWhere((command) => command.manager.client == client);
-    _attachedClients.remove(client);
+    attachedClients.remove(client);
   }
 
-  Future<void> _syncCommand(NyxxGateway client,
+  @internal
+  Future<void> syncCommand(NyxxGateway client,
       {required final CommandRegisterable<CommandContext> command}) async {
     final cmd = await _buildCommand(command);
 
@@ -523,14 +532,12 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
     return null;
   }
 
-  // final Map<CommandRegisterable<CommandContext>,
-  //     (StreamSubscription<CommandContext>, StreamSubscription<CommandContext>)> _subscriptions = {};
-
-  void addCommandOnTheFly(CommandRegisterable<CommandContext> command) {
-    if (_attachedClients.isNotEmpty) {
+  void addCommandOnTheFly(CommandRegisterable<CommandContext> command,
+      {required Snowflake guildId}) {
+    if (attachedClients.isNotEmpty) {
       scheduleMicrotask(() {
-        for (final client in _attachedClients) {
-          _syncCommand(client, command: command);
+        for (final client in attachedClients) {
+          syncCommand(client, command: command);
         }
       });
     }
@@ -540,67 +547,32 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
     command.onPreCall.listen(_onPreCallController.add);
     command.onPostCall.listen(_onPostCallController.add);
 
-    // _subscriptions[command] = (preCallSub, postCallSub);
-
     if (command is ChatCommandComponent) {
-      if (_chatCommands.containsKey(command.name)) {
-        throw CommandRegistrationError('Command with name "${command.name}" already exists');
-      }
-
+      _dynamicChatCommands['$guildId-${command.name}'] = command;
       for (final alias in command.aliases) {
-        if (_chatCommands.containsKey(alias)) {
-          throw CommandRegistrationError('Command with alias "$alias" already exists');
-        }
-      }
-
-      _chatCommands[command.name] = command;
-      for (final alias in command.aliases) {
-        _chatCommands[alias] = command;
+        _dynamicChatCommands['$guildId-$alias'] = command;
       }
 
       for (final child in command.walkCommands()) {
         logger.info('Registered command "${child.fullName}"');
       }
-    } else if (command is UserCommand) {
-      if (_userCommands.containsKey(command.name)) {
-        throw CommandRegistrationError('User Command with name "${command.name}" already exists');
-      }
-
-      _userCommands[command.name] = command;
-
-      logger.info('Registered User Command "${command.name}"');
-    } else if (command is MessageCommand) {
-      if (_messageCommands.containsKey(command.name)) {
-        throw CommandRegistrationError(
-            'Message Command with name "${command.name}" already exists');
-      }
-
-      _messageCommands[command.name] = command;
-
-      logger.info('Registered Message Command "${command.name}"');
     } else {
       logger.warning('Unknown command type "${command.runtimeType}"');
     }
   }
 
-  void removeCommandOnTheFly(CommandRegisterable<CommandContext> command) {
+  void removeCommandOnTheFly(CommandRegisterable<CommandContext> command,
+      {required Snowflake guildId}) {
     if (command is ChatCommandComponent) {
-      _chatCommands.remove(command.name);
+      _dynamicChatCommands.remove('$guildId-${command.name}');
       for (final alias in command.aliases) {
-        _chatCommands.remove(alias);
+        _dynamicChatCommands.remove('$guildId-$alias');
       }
-    } else if (command is UserCommand) {
-      _userCommands.remove(command.name);
-    } else if (command is MessageCommand) {
-      _messageCommands.remove(command.name);
     }
 
-    // final (pre, post) = _subscriptions.remove(command)!;
+    command.parent = null;
 
-    // pre.cancel();
-    // post.cancel();
-
-    for (final client in _attachedClients) {
+    for (final client in attachedClients) {
       final guildChecks = command.checks.whereType<GuildCheck>();
       final guilds = guildChecks.singleOrNull?.guildIds ?? [guild];
 
@@ -618,6 +590,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
           continue;
         }
 
+        // evil lexedia be like; import 'dart:cli' show waitFor;
         client.guilds[id].commands.delete(applicationCommand.id);
       }
     }
@@ -627,13 +600,13 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
   @override
   void addCommand(CommandRegisterable<CommandContext> command) {
-    if (_attachedClients.isNotEmpty && !_scheduledSync) {
+    if (attachedClients.isNotEmpty && !_scheduledSync) {
       _scheduledSync = true;
       scheduleMicrotask(() {
         logger.warning(
           'Registering commands after bot is ready might trigger rate limits when syncing commands',
         );
-        _attachedClients.forEach(_syncCommands);
+        attachedClients.forEach(_syncCommands);
         _scheduledSync = false;
       });
     }
@@ -685,15 +658,32 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   }
 
   @override
-  ChatCommand? getCommand(StringView view) => getCommandHelper(view, _chatCommands);
+  ChatCommand? getCommand(StringView view, [Snowflake? guildId]) => getCommandHelper(
+        view,
+        {
+          ..._chatCommands,
+          if (guildId != null)
+            ...Map.fromEntries(
+                _dynamicChatCommands.entries.where((e) => e.key.startsWith(guildId.toString())))
+        },
+        guildId,
+      );
 
   @override
-  Iterable<Command> walkCommands() sync* {
+  Iterable<Command> walkCommands([Snowflake? guildId]) sync* {
     yield* _userCommands.values;
     yield* _messageCommands.values;
 
     for (final command in Set.of(_chatCommands.values)) {
       yield* command.walkCommands();
+    }
+
+    if (guildId != null) {
+      for (final command in Set.of(_dynamicChatCommands.entries
+          .where((c) => c.key.startsWith(guildId.toString()))
+          .map((c) => c.value))) {
+        yield* command.walkCommands(guildId);
+      }
     }
   }
 

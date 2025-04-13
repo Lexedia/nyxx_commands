@@ -102,6 +102,9 @@ abstract class CommandRegisterable<T extends CommandContext>
   ///
   /// ![](https://user-images.githubusercontent.com/74512338/173841767-6e2c5215-ebc3-4a89-a2ac-8115949e2f0b.png)
   Map<Locale, String>? get localizedNames;
+
+  /// Copy this entity.
+  CommandRegisterable<T> copyWith();
 }
 
 /// An entity capable of having multiple child entities.
@@ -118,7 +121,7 @@ abstract class CommandGroup<T extends CommandContext> implements CallHooked<T>, 
   /// This will return all the [Command]s in this group, whether they be direct children or
   /// children of children. If you want all the direct [Command] children, consider using
   /// `children.whereType<ICommand>()` instead.
-  Iterable<Command<T>> walkCommands();
+  Iterable<Command<T>> walkCommands([Snowflake? guildId]);
 
   /// Add a command to this group.
   ///
@@ -136,7 +139,7 @@ abstract class CommandGroup<T extends CommandContext> implements CallHooked<T>, 
   /// You might also be interested in:
   /// - [walkCommands], for iterating over all commands in this group;
   /// - [children], for iterating over the children of this group.
-  Command<T>? getCommand(StringView view);
+  Command<T>? getCommand(StringView view, [Snowflake? guildId]);
 }
 
 /// An entity capable of being invoked by users.
@@ -232,10 +235,10 @@ abstract class ChatCommandComponent
   List<CommandOptionBuilder> getOptions(CommandsPlugin commands);
 
   @override
-  ChatCommand? getCommand(StringView view);
+  ChatCommand? getCommand(StringView view, [Snowflake? guildId]);
 
   @override
-  Iterable<ChatCommand> walkCommands();
+  Iterable<ChatCommand> walkCommands([Snowflake? guildId]);
 
   @override
   Iterable<ChatCommandComponent> get children;

@@ -89,18 +89,19 @@ mixin ChatGroupMixin implements ChatCommandComponent {
   Iterable<ChatCommandComponent> get children => Set.of(_childrenMap.values);
 
   @override
-  Iterable<ChatCommand> walkCommands() sync* {
+  Iterable<ChatCommand> walkCommands([Snowflake? guildId]) sync* {
     if (this is ChatCommand) {
       yield this as ChatCommand;
     }
 
     for (final child in children) {
-      yield* child.walkCommands();
+      yield* child.walkCommands(guildId);
     }
   }
 
   @override
-  ChatCommand? getCommand(StringView view) => getCommandHelper(view, _childrenMap);
+  ChatCommand? getCommand(StringView view, [Snowflake? guildId]) =>
+      getCommandHelper(view, _childrenMap, guildId);
 
   @override
   String get fullName =>
@@ -202,6 +203,19 @@ class ChatGroup
       super.check(check);
     }
   }
+
+  @override
+  ChatGroup copyWith() => ChatGroup(
+        name,
+        description,
+        aliases: List.of(aliases),
+        checks: List.of(checks),
+        children: List.of(children.map((child) => child.copyWith() as ChatCommandComponent)),
+        localizedDescriptions:
+            localizedDescriptions == null ? null : Map.of(localizedDescriptions!),
+        localizedNames: localizedNames == null ? null : Map.of(localizedNames!),
+        options: options,
+      );
 }
 
 /// Represents a [Discord Slash Command](https://discord.com/developers/docs/interactions/application-commands#slash-commands).
@@ -530,6 +544,22 @@ class ChatCommand
 
     singleChecks.add(check);
   }
+
+  @override
+  ChatCommand copyWith() => ChatCommand(
+        name,
+        description,
+        execute,
+        aliases: List.of(aliases),
+        checks: List.of(checks),
+        children: List.of(children.map((child) => child.copyWith() as ChatCommandComponent)),
+        localizedDescriptions:
+            localizedDescriptions == null ? null : Map.of(localizedDescriptions!),
+        localizedNames: localizedNames == null ? null : Map.of(localizedNames!),
+        // Not copying options should be okay
+        options: options,
+        singleChecks: List.of(singleChecks),
+      );
 
   @override
   String toString() => 'Command[name="$name", fullName="$fullName"]';

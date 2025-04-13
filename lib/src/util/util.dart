@@ -340,8 +340,7 @@ T id<T extends Function>(dynamic id, T fn) {
   return fn;
 }
 
-ChatCommand? getCommandHelper(
-    StringView view, Map<String, ChatCommandComponent> children) {
+ChatCommand? getCommandHelper(StringView view, Map<String, ChatCommandComponent> children, [Snowflake? guildId]) {
   String name = view.getWord();
   String lowerCaseName = name.toLowerCase();
 
@@ -351,13 +350,13 @@ ChatCommand? getCommandHelper(
           childEntry.value.resolvedOptions.caseInsensitiveCommands!;
 
       if (isCaseInsensitive) {
-        return lowerCaseName == childEntry.key.toLowerCase();
+        return (lowerCaseName == childEntry.key.toLowerCase()) || ('$guildId-$lowerCaseName' == childEntry.key.toLowerCase());
       }
 
-      return name == childEntry.key;
+      return (name == childEntry.key) || ('$guildId-$name' == childEntry.key);
     }).value;
 
-    ChatCommand? commandFromChild = child.getCommand(view);
+    ChatCommand? commandFromChild = child.getCommand(view, guildId);
 
     // If no command further down the tree was found, return the child if it is a chat command
     // that can be invoked from a text message (not slash only).

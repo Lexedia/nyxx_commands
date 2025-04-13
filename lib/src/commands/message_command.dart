@@ -90,4 +90,9 @@ class MessageCommand
 
     _postCallController.add(context);
   }
+  
+  @override
+  CommandRegisterable<MessageContext> copyWith() {
+    throw UnimplementedError();
+  }
 }
