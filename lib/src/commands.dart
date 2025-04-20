@@ -314,7 +314,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     final commandResult = guilds.isEmpty
         ? [await client.commands.create(builder)]
-        : await guilds.map((guildId) => client.guilds[guildId!].commands.create(builder)).wait;
+        : await guilds.nonNulls.map((guildId) => client.guilds[guildId].commands.create(builder)).wait;
 
     registeredCommands.addAll(commandResult);
 
