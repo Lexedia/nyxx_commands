@@ -1,4 +1,5 @@
 import 'package:nyxx/nyxx.dart';
+import 'package:nyxx_commands/src/commands/chat_command.dart';
 import 'package:nyxx_commands/src/util/util.dart';
 
 import '../commands/interfaces.dart';
@@ -61,7 +62,7 @@ class PermissionsCheck extends Check {
                   (element) =>
                       element.id == (context as InteractionCommandContextData).interaction.data.id,
                 );
-              } else {
+              } else if (context.command.options.type != CommandType.textOnly) {
                 // If the invocation was not from a slash command, try to find a matching slash
                 // command and use the overrides from that.
                 CommandRegisterable root = context.command;
@@ -81,64 +82,65 @@ class PermissionsCheck extends Check {
                 }
 
                 command = matchingCommands.first;
-              }
 
-              CommandPermissions overrides = await command.fetchPermissions(context.guild!.id);
+                CommandPermissions overrides = await command.fetchPermissions(context.guild!.id);
 
-              if (overrides.permissions.isEmpty) {
-                overrides =
-                    (await context.client.guilds[context.guild!.id].commands.listPermissions())
-                        .singleWhere(
-                  (overrides) => overrides.command == null,
-                  orElse: () => overrides,
-                );
-              }
+                if (overrides.permissions.isEmpty) {
+                  overrides =
+                      (await context.client.guilds[context.guild!.id].commands.listPermissions())
+                          .singleWhere(
+                    (overrides) => overrides.command == null,
+                    orElse: () => overrides,
+                  );
+                }
 
-              bool? def;
-              bool? channelDef;
-              bool? role;
-              bool? channel;
-              bool? user;
+                bool? def;
+                bool? channelDef;
+                bool? role;
+                bool? channel;
+                bool? user;
 
-              int highestRoleIndex = -1;
+                int highestRoleIndex = -1;
 
-              for (final override in overrides.permissions) {
-                if (override.id == context.guild!.id) {
-                  def = override.hasPermission;
-                } else if (override.id == Snowflake(context.guild!.id.value - 1)) {
-                  channelDef = override.hasPermission;
-                } else if (override.type == CommandPermissionType.channel &&
-                    override.id == context.channel.id) {
-                  channel = override.hasPermission;
-                } else if (override.type == CommandPermissionType.role) {
-                  int roleIndex = -1;
+                for (final override in overrides.permissions) {
+                  if (override.id == context.guild!.id) {
+                    def = override.hasPermission;
+                  } else if (override.id == Snowflake(context.guild!.id.value - 1)) {
+                    channelDef = override.hasPermission;
+                  } else if (override.type == CommandPermissionType.channel &&
+                      override.id == context.channel.id) {
+                    channel = override.hasPermission;
+                  } else if (override.type == CommandPermissionType.role) {
+                    int roleIndex = -1;
 
-                  int i = 0;
-                  for (final role in member.roles) {
-                    if (role.id == override.id) {
-                      roleIndex = i;
-                      break;
+                    int i = 0;
+                    for (final role in member.roles) {
+                      if (role.id == override.id) {
+                        roleIndex = i;
+                        break;
+                      }
+
+                      i++;
                     }
 
-                    i++;
+                    if (highestRoleIndex < roleIndex) {
+                      role = override.hasPermission;
+                      highestRoleIndex = roleIndex;
+                    }
+                  } else if (override.type == CommandPermissionType.user &&
+                      override.id == context.user.id) {
+                    user = override.hasPermission;
+                    // No need to continue if we found an override for the specific user
+                    break;
                   }
-
-                  if (highestRoleIndex < roleIndex) {
-                    role = override.hasPermission;
-                    highestRoleIndex = roleIndex;
-                  }
-                } else if (override.type == CommandPermissionType.user &&
-                    override.id == context.user.id) {
-                  user = override.hasPermission;
-                  // No need to continue if we found an override for the specific user
-                  break;
                 }
-              }
 
-              Iterable<bool> prioritized = [def, channelDef, role, channel, user].whereType<bool>();
+                Iterable<bool> prioritized =
+                    [def, channelDef, role, channel, user].whereType<bool>();
 
-              if (prioritized.isNotEmpty) {
-                return prioritized.last;
+                if (prioritized.isNotEmpty) {
+                  return prioritized.last;
+                }
               }
             }
 

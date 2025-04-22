@@ -71,12 +71,23 @@ class StringView {
 
   /// Whether the current character is whitespace.
   ///
-  /// In this case, *whitespace* refers to a non-escaped space character (ASCII 32).
+  /// In this case, *whitespace* refers to a non-escaped space character (ASCII 32) or a tab character (ASCII 9).
   ///
   /// You might also be interested in:
   /// - [isEscaped], for checking if an arbitrary character is escaped;
+  /// - [current], for getting the current character;
+  /// - [isNewline], for checking if an arbitrary character is a newline.
+  bool get isWhitespace => (current == ' ' || current == '\t') && !isEscaped(index);
+
+  /// Whether the current character is newline.
+  ///
+  /// In this case, *newline* refers to a line feed character (ASCII 10) or a carriage return character (ASCII 13).
+  ///
+  /// You might also be interested in:
+  /// - [isEscaped], for checking if an arbitrary character is escaped;
+  /// - [isWhitespace], for checking if an arbitrary character is whitespace;
   /// - [current], for getting the current character.
-  bool get isWhitespace => current == ' ' && !isEscaped(index);
+  bool get isNewline => (current == '\n' || current == '\r') && !isEscaped(index);
 
   /// The part of [buffer] that has yet to be consumed, spanning from [index] to the end of
   /// [buffer].
@@ -124,15 +135,80 @@ class StringView {
     return match;
   }
 
-  /// Skip to the next non-whitespace character in [buffer].
-  ///
-  /// In this case, *whitespace* refers to a non-escaped space character (ASCII 32).
+  /// Match [p] at the text directly after the cursor and skip over the first occurrence if it exists, else
+  /// return `null`.
   ///
   /// You might also be interested in:
-  /// - [skipString], for skipping a specific string.
+  /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
+  /// - [skipString], for skipping arbitrary strings.
+  Match? skipFirst(Pattern p) {
+    final match = switch (p) {
+      String s => s.matchAsPrefix(buffer.substring(index)),
+      RegExp r => r.firstMatch(buffer.substring(index)),
+      _ => throw ArgumentError('Unsupported pattern type: $p'),
+    };
+
+    if (match != null) {
+      history.add(index);
+      index += match.end;
+      return match;
+    }
+
+    return null;
+  }
+
+  /// Match [p] at the text directly after the cursor and skip over all occurrences of it.
+  ///
+  /// You might also be interested in:
+  /// - [skipPattern], for skipping arbitrary patterns.
+  /// - [skipString], for skipping arbitrary strings.
+  List<Match> skipAll(Pattern p) {
+    final matches = switch (p) {
+      String s => buffer.substring(index).allMatches(s),
+      RegExp r => r.allMatches(buffer.substring(index)),
+      _ => throw ArgumentError('Unsupported pattern type: $p'),
+    }
+        .toList();
+
+    if (matches.isNotEmpty) {
+      for (var match in matches) {
+        history.add(index);
+        index += match.end;
+        if (index >= buffer.length) break;
+      }
+    }
+
+    return matches;
+  }
+
+  /// Skip to the next non-whitespace character in [buffer].
+  ///
+  /// In this case, *whitespace* refers to a non-escaped space character (ASCII 32) or a
+  /// non-escaped tab character (ASCII 9).
+  ///
+  /// You might also be interested in:
+  /// - [skipString], for skipping a specific string;
+  /// - [skipPattern], for skipping a specific pattern;
+  /// - [skipNewline], for skipping to the next non-newline character.
   void skipWhitespace() {
     history.add(index);
     while (!eof && isWhitespace) {
+      index++;
+    }
+  }
+
+  /// Skip to the next non-newline character in [buffer].
+  ///
+  /// In this case, *newline* refers to a non-escaped line feed character (ASCII 10) or a
+  /// non-escaped carriage return character (ASCII 13).
+  ///
+  /// You might also be interested in:
+  /// - [skipString], for skipping a specific string;
+  /// - [skipPattern], for skipping a specific pattern;
+  /// - [skipWhitespace], for skipping to the next non-whitespace character.
+  void skipNewline() {
+    history.add(index);
+    while (!eof && isNewline) {
       index++;
     }
   }
@@ -169,6 +245,7 @@ class StringView {
   /// - [isWhitespace], for checking if the current character is considered whitespace.
   String getWord() {
     skipWhitespace();
+    skipNewline();
 
     int start = index;
 
@@ -196,6 +273,7 @@ class StringView {
   /// - [isWhitespace], for checking if the current character is considered whitespace.
   String getQuotedWord() {
     skipWhitespace();
+    skipNewline();
 
     if (isRestBlock) {
       String content = remaining;
@@ -225,6 +303,24 @@ class StringView {
     } else {
       return getWord();
     }
+  }
+
+  /// Get a string from the current buffer until [p] is matched.
+  /// 
+  /// This method does not consume [p].
+  ///
+  /// If [p] is not found in the current buffer, this method will return a string from the current
+  /// position to the end of the buffer.
+  ///
+  /// You might also be interested in:
+  ///  - [getWord], for getting a word from the current buffer.
+  ///  - [getQuotedWord], for getting a quoted word from the current buffer.
+  String getUntil(Pattern p) {
+    int pos = buffer.indexOf(p, index);
+    if (pos == -1) pos = buffer.length;
+    String result = buffer.substring(index, pos);
+    index = pos;
+    return result;
   }
 
   /// Escape and return a portion of [buffer].
@@ -257,16 +353,17 @@ class StringView {
 
   /// Create a copy of this [StringView], with an identical [buffer] and [index].
   StringView copy() {
-    StringView res =
-        StringView(buffer)
-          ..history = history
-          ..index = index;
+    StringView res = StringView(buffer)
+      ..history = history
+      ..index = index;
     return res;
   }
 
-  /// Fully consumes this view until the [eof] is reached using [getQuotedWord], and returns a [List] of [String]s.
+  /// Fully consumes this view until the [eof] is reached using [getQuotedWord],
+  /// and returns a [List] of [String]s.
   List<String> toList() => [for (; !eof;) getQuotedWord()];
 
   @override
-  String toString() => 'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
+  String toString() =>
+      'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
 }
