@@ -257,13 +257,16 @@ class StringView {
 
   /// Create a copy of this [StringView], with an identical [buffer] and [index].
   StringView copy() {
-    StringView res = StringView(buffer)
-      ..history = history
-      ..index = index;
+    StringView res =
+        StringView(buffer)
+          ..history = history
+          ..index = index;
     return res;
   }
 
+  /// Fully consumes this view until the [eof] is reached using [getQuotedWord], and returns a [List] of [String]s.
+  List<String> toList() => [for (; !eof;) getQuotedWord()];
+
   @override
-  String toString() =>
-      'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
+  String toString() => 'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
 }
