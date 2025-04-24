@@ -813,11 +813,11 @@ mixin MessageRespondMixin implements InteractiveMixin {
       throw AlreadyTypingException(_nearestCommandContext);
     }
 
-    await message.channel.triggerTyping();
+    Future<void> Function() typing = message.channel.triggerTyping;
 
-    typingTask = Timer.periodic(const Duration(seconds: 5), (_) async {
-      await message.channel.triggerTyping();
-    });
+    await typing();
+
+    typingTask = Timer.periodic(const Duration(seconds: 5), (_) => typing());
   }
 
   @override
