@@ -491,7 +491,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   ///
   /// You might also be interested in:
   /// - [addConverter], for adding converters to this [CommandsPlugin].
-  Converter<T>? getConverter<T>(RuntimeType<T> type, {bool logWarn = true}) {
+  Converter<T>? getConverter<T>(RuntimeType<T> type, {bool logWarn = false}) {
     if (_converters.containsKey(type)) {
       return _converters[type]! as Converter<T>;
     }

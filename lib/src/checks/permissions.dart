@@ -150,7 +150,7 @@ class PermissionsCheck extends Check {
               return corresponding == permissions;
             }
 
-            return corresponding != 0;
+            return corresponding != const Permissions(0);
           },
         );
 
