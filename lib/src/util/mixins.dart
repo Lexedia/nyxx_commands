@@ -805,10 +805,30 @@ mixin InteractionRespondMixin
 mixin MessageRespondMixin implements InteractiveMixin {
   Message get message;
 
+  Timer? typingTask;
+
+  @override
+  Future<void> acknowledge({ResponseLevel? level}) async {
+    if (typingTask != null) {
+      throw AlreadyTypingException(_nearestCommandContext);
+    }
+
+    await message.channel.triggerTyping();
+
+    typingTask = Timer.periodic(const Duration(seconds: 5), (_) async {
+      await message.channel.triggerTyping();
+    });
+  }
+
   @override
   Future<Message> respond(MessageBuilder builder, {ResponseLevel? level}) async {
     if (_delegate != null) {
       return _delegate!.respond(builder, level: level);
+    }
+
+    if (typingTask != null) {
+      typingTask!.cancel();
+      typingTask = null;
     }
 
     level ??= _nearestCommandContext.command.resolvedOptions.defaultResponseLevel!;
@@ -818,8 +838,8 @@ mixin MessageRespondMixin implements InteractiveMixin {
       return dmChannel.sendMessage(builder);
     }
 
-    if (builder.replyId == null) {
-      builder.replyId = message.id;
+    if (builder.referencedMessage == null) {
+      builder.referencedMessage ??= MessageReferenceBuilder.reply(messageId: message.id);
 
       if (level.mention case final shouldMention?) {
         final allowedMentions = builder.allowedMentions ?? AllowedMentions();

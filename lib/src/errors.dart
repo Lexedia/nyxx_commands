@@ -248,3 +248,10 @@ class CommandRegistrationError extends CommandsError {
   /// Create a new [CommandRegistrationError].
   CommandRegistrationError(super.message);
 }
+
+/// An exception that indicates that the client is already typing.
+class AlreadyTypingException extends CommandInvocationException {
+
+  /// Create a new [AlreadyTypingException].
+  AlreadyTypingException(CommandContext context) : super('Already typing', context);
+}

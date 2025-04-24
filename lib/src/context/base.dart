@@ -8,6 +8,7 @@ import '../converters/converter.dart';
 import '../util/util.dart';
 import 'component_context.dart';
 import 'modal_context.dart';
+import 'chat_context.dart';
 
 /// The base class for all contexts in nyxx_commands.
 ///
@@ -87,6 +88,19 @@ abstract interface class InteractiveContext {
   /// - [InteractionInteractiveContext.acknowledge], for acknowledging interactions without
   /// responding.
   Future<Message> respond(MessageBuilder builder, {ResponseLevel? level});
+
+  /// Acknowledges the command.
+  /// 
+  /// Depending on the context, this will either:
+  ///   - For [InteractionCommandContext] this will acknowledge the interaction;
+  ///   - For [MessageChatContext] this will send a typing state until [respond] is called.
+  /// 
+  /// [level] can be set to forward it to the sub-acknowledge method if the context is [InteractionCommandContext], 
+  /// this will have no effect on [MessageChatContext].
+  /// 
+  /// You might also be interested in:
+  ///   - [respond], for responding after acknowledging.
+  Future<void> acknowledge({ResponseLevel? level});
 
   /// Wait for a user to press a button and return a context representing that button press.
   ///
@@ -235,6 +249,7 @@ abstract interface class InteractionInteractiveContext implements InteractiveCon
   ///
   /// You might also be interested in:
   /// - [respond], for sending a full response.
+  @override
   Future<void> acknowledge({ResponseLevel? level});
 
   /// Wait for a user to submit a modal and return a context representing that submission.
