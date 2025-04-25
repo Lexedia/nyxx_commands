@@ -45,8 +45,10 @@ enum CommandType {
 }
 
 mixin ChatGroupMixin implements ChatCommandComponent {
-  final StreamController<ChatContext> _onPreCallController = StreamController.broadcast();
-  final StreamController<ChatContext> _onPostCallController = StreamController.broadcast();
+  final StreamController<ChatContext> _onPreCallController =
+      StreamController.broadcast();
+  final StreamController<ChatContext> _onPostCallController =
+      StreamController.broadcast();
 
   @override
   late final Stream<ChatContext> onPreCall = _onPreCallController.stream;
@@ -65,12 +67,14 @@ mixin ChatGroupMixin implements ChatCommandComponent {
 
     for (final alias in command.aliases) {
       if (_childrenMap.containsKey(alias)) {
-        throw CommandRegistrationError('Command with alias "$fullName $alias" already exists');
+        throw CommandRegistrationError(
+            'Command with alias "$fullName $alias" already exists');
       }
     }
 
     if (parent != null) {
-      logger.warning('Registering commands to a group after it is registered might cause slash '
+      logger.warning(
+          'Registering commands to a group after it is registered might cause slash '
           'commands to have incomplete definitions');
     }
 
@@ -105,12 +109,15 @@ mixin ChatGroupMixin implements ChatCommandComponent {
 
   @override
   String get fullName =>
-      (parent is! ChatCommandComponent ? '' : '${(parent as ChatCommandComponent).fullName} ') +
+      (parent is! ChatCommandComponent
+          ? ''
+          : '${(parent as ChatCommandComponent).fullName} ') +
       name;
 
   @override
   bool get hasSlashCommand => children.any((child) =>
-      (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) ||
+      (child is ChatCommand &&
+          child.resolvedOptions.type != CommandType.textOnly) ||
       child.hasSlashCommand);
 
   @override
@@ -129,7 +136,8 @@ mixin ChatGroupMixin implements ChatCommandComponent {
             options: List.of(child.getOptions(commands)),
           ),
         );
-      } else if (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) {
+      } else if (child is ChatCommand &&
+          child.resolvedOptions.type != CommandType.textOnly) {
         options.add(
           CommandOptionBuilder(
             type: CommandOptionType.subCommand,
@@ -180,6 +188,12 @@ class ChatGroup
   @override
   final Map<Locale, String>? localizedDescriptions;
 
+  @override
+  final List<InteractionContextType> contexts;
+
+  @override
+  final List<ApplicationIntegrationType> integrationTypes;
+
   /// Create a new [ChatGroup].
   ChatGroup(
     this.name,
@@ -190,6 +204,8 @@ class ChatGroup
     this.options = const CommandOptions(),
     this.localizedNames,
     this.localizedDescriptions,
+    this.contexts = const [InteractionContextType.guild],
+    this.integrationTypes = const [ApplicationIntegrationType.guildInstall],
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid group name "$name"');
@@ -319,6 +335,12 @@ class ChatCommand
   @override
   final Map<Locale, String>? localizedDescriptions;
 
+  @override
+  final List<InteractionContextType> contexts;
+
+  @override
+  final List<ApplicationIntegrationType> integrationTypes;
+
   /// Create a new [ChatCommand].
   ///
   /// You might also be interested in:
@@ -336,21 +358,29 @@ class ChatCommand
     this.options = const CommandOptions(),
     this.localizedNames,
     this.localizedDescriptions,
+    this.contexts = const [InteractionContextType.guild],
+    this.integrationTypes = const [ApplicationIntegrationType.guildInstall],
   }) {
     if (!commandNameRegexp.hasMatch(name) || name != name.toLowerCase()) {
       throw CommandRegistrationError('Invalid command name "$name"');
     }
 
     if ((localizedNames != null &&
-        localizedNames!.values
-            .any((names) => !commandNameRegexp.hasMatch(names) || names != names.toLowerCase()))) {
-      throw CommandRegistrationError('Invalid localized name for command "$name".');
+        localizedNames!.values.any((names) =>
+            !commandNameRegexp.hasMatch(names) ||
+            names != names.toLowerCase()))) {
+      throw CommandRegistrationError(
+          'Invalid localized name for command "$name".');
     }
 
     RuntimeType<ChatContext> contextType = switch (resolvedOptions.type) {
-      CommandType.textOnly => const RuntimeType<MessageChatContext>.allowingDynamic(),
-      CommandType.slashOnly => const RuntimeType<InteractionChatContext>.allowingDynamic(),
-      null || CommandType.all => const RuntimeType<ChatContext>.allowingDynamic(),
+      CommandType.textOnly =>
+        const RuntimeType<MessageChatContext>.allowingDynamic(),
+      CommandType.slashOnly =>
+        const RuntimeType<InteractionChatContext>.allowingDynamic(),
+      null ||
+      CommandType.all =>
+        const RuntimeType<ChatContext>.allowingDynamic(),
     };
 
     _loadArguments(execute, contextType);
@@ -372,7 +402,8 @@ class ChatCommand
     _functionData = loadFunctionData(fn);
 
     if (_functionData.parametersData.isEmpty) {
-      throw CommandRegistrationError('Command callback function must have a Context parameter');
+      throw CommandRegistrationError(
+          'Command callback function must have a Context parameter');
     }
 
     if (!contextType.isSupertypeOf(_functionData.parametersData.first.type)) {
@@ -383,14 +414,16 @@ class ChatCommand
     // Skip context parameter
     for (final parameter in _functionData.parametersData.skip(1)) {
       if (parameter.description != null) {
-        if (parameter.description!.isEmpty || parameter.description!.length > 100) {
+        if (parameter.description!.isEmpty ||
+            parameter.description!.length > 100) {
           throw CommandRegistrationError(
               'Descriptions must not be empty nor longer than 100 characters');
         }
       }
 
       if (parameter.converterOverride != null) {
-        if (!parameter.type.isSupertypeOf(parameter.converterOverride!.output)) {
+        if (!parameter.type
+            .isSupertypeOf(parameter.converterOverride!.output)) {
           throw CommandRegistrationError('Invalid converter override');
         }
       }
@@ -464,7 +497,8 @@ class ChatCommand
     try {
       await Function.apply(execute, [context, ...context.arguments]);
     } catch (e, s) {
-      Error.throwWithStackTrace(UncaughtException(e, context)..stackTrace = s, s);
+      Error.throwWithStackTrace(
+          UncaughtException(e, context)..stackTrace = s, s);
     }
 
     _onPostCallController.add(context);
@@ -476,8 +510,8 @@ class ChatCommand
       List<CommandOptionBuilder> options = [];
 
       for (final parameter in _functionData.parametersData.skip(1)) {
-        Converter<dynamic>? argumentConverter =
-            parameter.converterOverride ?? commands.getConverter(parameter.type);
+        Converter<dynamic>? argumentConverter = parameter.converterOverride ??
+            commands.getConverter(parameter.type);
 
         Iterable<CommandOptionChoiceBuilder<dynamic>>? choices =
             parameter.choices?.entries.indexed.map((entry) => CommandOptionChoiceBuilder(
@@ -496,8 +530,9 @@ class ChatCommand
           descriptionLocalizations: parameter.localizedDescriptions,
           isRequired: !parameter.isOptional,
           choices: choices?.toList(),
-          hasAutocomplete:
-              (parameter.autocompleteOverride ?? argumentConverter?.autocompleteCallback) != null,
+          hasAutocomplete: (parameter.autocompleteOverride ??
+                  argumentConverter?.autocompleteCallback) !=
+              null,
         );
 
         argumentConverter?.processOptionCallback?.call(builder);
@@ -521,7 +556,8 @@ class ChatCommand
 
     if (resolvedOptions.type != CommandType.textOnly) {
       if (command.hasSlashCommand ||
-          (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly)) {
+          (command is ChatCommand &&
+              command.resolvedOptions.type != CommandType.textOnly)) {
         throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }

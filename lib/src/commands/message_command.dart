@@ -36,13 +36,18 @@ import 'options.dart';
 /// - [ChatCommand], for creating chat commands;
 /// - [UserCommand], for creating user commands.
 class MessageCommand
-    with ParentMixin<MessageContext>, CheckMixin<MessageContext>, OptionsMixin<MessageContext>
+    with
+        ParentMixin<MessageContext>,
+        CheckMixin<MessageContext>,
+        OptionsMixin<MessageContext>
     implements Command<MessageContext> {
   @override
   final String name;
 
-  final StreamController<MessageContext> _preCallController = StreamController.broadcast();
-  final StreamController<MessageContext> _postCallController = StreamController.broadcast();
+  final StreamController<MessageContext> _preCallController =
+      StreamController.broadcast();
+  final StreamController<MessageContext> _postCallController =
+      StreamController.broadcast();
 
   @override
   late final Stream<MessageContext> onPreCall = _preCallController.stream;
@@ -59,6 +64,12 @@ class MessageCommand
   @override
   final Map<Locale, String>? localizedNames;
 
+  @override
+  final List<InteractionContextType> contexts;
+
+  @override
+  final List<ApplicationIntegrationType> integrationTypes;
+
   /// Create a new [MessageCommand].
   MessageCommand(
     this.name,
@@ -66,6 +77,8 @@ class MessageCommand
     Iterable<AbstractCheck> checks = const [],
     this.options = const CommandOptions(),
     this.localizedNames,
+    this.contexts = const [InteractionContextType.guild],
+    this.integrationTypes = const [ApplicationIntegrationType.guildInstall],
   }) {
     for (final check in checks) {
       this.check(check);

@@ -56,7 +56,8 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<CommandContext> {
+class CommandsPlugin extends NyxxPlugin<NyxxGateway>
+    implements CommandGroup<CommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
   /// This function should return a [Pattern] that should match the start of the message content if
@@ -81,8 +82,10 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
   final StreamController<CommandsException> _onCommandErrorController =
       StreamController.broadcast();
-  final StreamController<CommandContext> _onPreCallController = StreamController.broadcast();
-  final StreamController<CommandContext> _onPostCallController = StreamController.broadcast();
+  final StreamController<CommandContext> _onPreCallController =
+      StreamController.broadcast();
+  final StreamController<CommandContext> _onPostCallController =
+      StreamController.broadcast();
 
   /// A stream of [CommandsException]s that occur during a command's execution.
   ///
@@ -103,7 +106,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   /// - [CommandsException], the class all exceptions in nyxx_commands subclass;
   /// - [CallHooked.onPostCall], a stream that emits [CommandContext]s once a command completes
   /// successfully.
-  late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
+  late final Stream<CommandsException> onCommandError =
+      _onCommandErrorController.stream;
 
   @override
   late final Stream<CommandContext> onPreCall = _onPreCallController.stream;
@@ -168,7 +172,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     if (options.logErrors) {
       onCommandError.listen(
-        (error) => logger.shout('Uncaught exception in command', error, error.stackTrace),
+        (error) => logger.shout(
+            'Uncaught exception in command', error, error.stackTrace),
       );
     }
   }
@@ -179,7 +184,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     client.onMessageComponentInteraction
         .map((event) => event.interaction)
-        .where((interaction) => interaction.data.type == MessageComponentType.button)
+        .where((interaction) =>
+            interaction.data.type == MessageComponentType.button)
         .listen(
       (interaction) async {
         try {
@@ -192,7 +198,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     client.onMessageComponentInteraction
         .map((event) => event.interaction)
-        .where((interaction) => interaction.data.type == MessageComponentType.stringSelect)
+        .where((interaction) =>
+            interaction.data.type == MessageComponentType.stringSelect)
         .listen(
       (interaction) async {
         try {
@@ -211,7 +218,9 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       }
     });
 
-    client.onApplicationCommandInteraction.map((event) => event.interaction).listen(
+    client.onApplicationCommandInteraction
+        .map((event) => event.interaction)
+        .listen(
       (interaction) async {
         try {
           final applicationCommand = registeredCommands.singleWhere(
@@ -228,8 +237,10 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
               interaction,
               _messageCommands[applicationCommand.name]!,
             );
-          } else if (interaction.data.type == ApplicationCommandType.chatInput) {
-            final (command, options) = _resolveChatCommand(interaction, applicationCommand);
+          } else if (interaction.data.type ==
+              ApplicationCommandType.chatInput) {
+            final (command, options) =
+                _resolveChatCommand(interaction, applicationCommand);
 
             await eventManager.processChatInteraction(
               interaction,
@@ -251,18 +262,22 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
           (command) => command.id == interaction.data.id,
         );
 
-        final (command, options) = _resolveChatCommand(interaction, applicationCommand);
+        final (command, options) =
+            _resolveChatCommand(interaction, applicationCommand);
 
         final functionData = loadFunctionData(command.execute);
-        final focusedOption = options.singleWhere((element) => element.isFocused == true);
+        final focusedOption =
+            options.singleWhere((element) => element.isFocused == true);
         final focusedParameter = functionData.parametersData
             .singleWhere((element) => element.name == focusedOption.name);
 
-        final converter = focusedParameter.converterOverride ?? getConverter(focusedParameter.type);
+        final converter = focusedParameter.converterOverride ??
+            getConverter(focusedParameter.type);
 
         await eventManager.processAutocompleteInteraction(
           interaction,
-          (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
+          (focusedParameter.autocompleteOverride ??
+              converter?.autocompleteCallback)!,
           command,
         );
       } on CommandsException catch (e) {
@@ -289,7 +304,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       final subcommandOption = options.single;
 
       options = subcommandOption.options ?? [];
-      command = command.children.singleWhere((element) => element.name == subcommandOption.name);
+      command = command.children
+          .singleWhere((element) => element.name == subcommandOption.name);
     }
 
     return (command, options);
@@ -332,7 +348,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     registeredCommands.addAll(commands.expand((_) => _));
 
-    logger.info('Synced ${builders.values.fold(0, (p, e) => p + e.length)} commands to Discord');
+    logger.info(
+        'Synced ${builders.values.fold(0, (p, e) => p + e.length)} commands to Discord');
   }
 
   Future<(Iterable<Snowflake?>, ApplicationCommandBuilder)?> _buildCommand(
@@ -393,13 +410,15 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
     return (guilds, builder);
   }
 
-  Future<Map<Snowflake?, List<ApplicationCommandBuilder>>> _buildCommands() async {
+  Future<Map<Snowflake?, List<ApplicationCommandBuilder>>>
+      _buildCommands() async {
     final result = <Snowflake?, List<ApplicationCommandBuilder>>{null: []};
 
     for (final command in children) {
       final shouldRegister = command is! ChatCommandComponent ||
           command.hasSlashCommand ||
-          (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly);
+          (command is ChatCommand &&
+              command.resolvedOptions.type != CommandType.textOnly);
       if (!shouldRegister) {
         continue;
       }
@@ -431,6 +450,13 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
           throw CommandsError('Unknown command type ${command.runtimeType}');
       }
 
+      final contexts = command.contexts.contains(InteractionContextType.botDm)
+          ? command.contexts
+          : [
+              if (await checks.allowsDm) InteractionContextType.botDm,
+              ...command.contexts,
+            ];
+
       final builder = ApplicationCommandBuilder(
         type: type,
         name: command.name,
@@ -439,7 +465,9 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
         descriptionLocalizations: localizedDescriptions,
         options: options,
         defaultMemberPermissions: await checks.requiredPermissions,
-        hasDmPermission: await checks.allowsDm,
+        // hasDmPermission: await checks.allowsDm,
+        contexts: contexts,
+        integrationTypes: command.integrationTypes,
       );
 
       final guildChecks = command.checks.whereType<GuildCheck>();
@@ -618,12 +646,14 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     if (command is ChatCommandComponent) {
       if (_chatCommands.containsKey(command.name)) {
-        throw CommandRegistrationError('Command with name "${command.name}" already exists');
+        throw CommandRegistrationError(
+            'Command with name "${command.name}" already exists');
       }
 
       for (final alias in command.aliases) {
         if (_chatCommands.containsKey(alias)) {
-          throw CommandRegistrationError('Command with alias "$alias" already exists');
+          throw CommandRegistrationError(
+              'Command with alias "$alias" already exists');
         }
       }
 
@@ -637,7 +667,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       }
     } else if (command is UserCommand) {
       if (_userCommands.containsKey(command.name)) {
-        throw CommandRegistrationError('User Command with name "${command.name}" already exists');
+        throw CommandRegistrationError(
+            'User Command with name "${command.name}" already exists');
       }
 
       _userCommands[command.name] = command;

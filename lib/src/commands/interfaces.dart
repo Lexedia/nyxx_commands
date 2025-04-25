@@ -103,6 +103,13 @@ abstract class CommandRegisterable<T extends CommandContext>
   /// ![](https://user-images.githubusercontent.com/74512338/173841767-6e2c5215-ebc3-4a89-a2ac-8115949e2f0b.png)
   Map<Locale, String>? get localizedNames;
 
+
+  /// The type
+  List<ApplicationIntegrationType> get integrationTypes;
+
+
+  List<InteractionContextType> get contexts;
+
   /// Copy this entity.
   CommandRegisterable<T> copyWith();
 }

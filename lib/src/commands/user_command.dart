@@ -32,7 +32,10 @@ import 'options.dart';
 /// - [ChatCommand], for creating chat commands;
 /// - [MessageCommand], for creating message commands.
 class UserCommand
-    with ParentMixin<UserContext>, CheckMixin<UserContext>, OptionsMixin<UserContext>
+    with
+        ParentMixin<UserContext>,
+        CheckMixin<UserContext>,
+        OptionsMixin<UserContext>
     implements Command<UserContext> {
   @override
   final String name;
@@ -40,8 +43,10 @@ class UserCommand
   @override
   final Function(UserContext) execute;
 
-  final StreamController<UserContext> _preCallController = StreamController.broadcast();
-  final StreamController<UserContext> _postCallController = StreamController.broadcast();
+  final StreamController<UserContext> _preCallController =
+      StreamController.broadcast();
+  final StreamController<UserContext> _postCallController =
+      StreamController.broadcast();
 
   @override
   late final Stream<UserContext> onPreCall = _preCallController.stream;
@@ -55,6 +60,12 @@ class UserCommand
   @override
   final Map<Locale, String>? localizedNames;
 
+  @override
+  final List<InteractionContextType> contexts;
+
+  @override
+  final List<ApplicationIntegrationType> integrationTypes;
+
   /// Create a new [UserCommand].
   UserCommand(
     this.name,
@@ -62,6 +73,8 @@ class UserCommand
     Iterable<AbstractCheck> checks = const [],
     this.options = const CommandOptions(),
     this.localizedNames,
+    this.contexts = const [InteractionContextType.guild],
+    this.integrationTypes = const [ApplicationIntegrationType.guildInstall],
   }) {
     for (final check in checks) {
       this.check(check);
