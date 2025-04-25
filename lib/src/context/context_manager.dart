@@ -123,12 +123,25 @@ class ContextManager {
     User targetUser = await client.users[interaction.data.targetId!].get();
     Guild? guild = await interaction.guild?.get();
 
+    TextChannel channel = interaction.context == InteractionContextType.privateChannel
+        ? await (() async {
+            TextChannel channel;
+            try {
+              channel = await client.users.createDm(targetUser.id);
+            } on HttpResponseError {
+              throw 'TODO';
+            }
+
+            return channel;
+          })()
+        : await interaction.channel!.get() as TextChannel;
+
     return UserContext(
       commands: commands,
       client: client,
       interaction: interaction,
       command: command,
-      channel: await interaction.channel!.get() as TextChannel,
+      channel: channel,
       member: member,
       user: user,
       guild: guild,
@@ -185,8 +198,7 @@ class ContextManager {
       }
     }
 
-    final focusedOption = expandOptions(interaction.data.options!)
-        .singleWhere((element) => element.isFocused == true);
+    final focusedOption = expandOptions(interaction.data.options!).singleWhere((element) => element.isFocused == true);
 
     return AutocompleteContext(
       commands: commands,

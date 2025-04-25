@@ -90,14 +90,14 @@ abstract interface class InteractiveContext {
   Future<Message> respond(MessageBuilder builder, {ResponseLevel? level});
 
   /// Acknowledges the command.
-  /// 
+  ///
   /// Depending on the context, this will either:
   ///   - For [InteractionCommandContext] this will acknowledge the interaction;
   ///   - For [MessageChatContext] this will send a typing state until [respond] is called.
-  /// 
-  /// [level] can be set to forward it to the sub-acknowledge method if the context is [InteractionCommandContext], 
+  ///
+  /// [level] can be set to forward it to the sub-acknowledge method if the context is [InteractionCommandContext],
   /// this will have no effect on [MessageChatContext].
-  /// 
+  ///
   /// You might also be interested in:
   ///   - [respond], for responding after acknowledging.
   Future<void> acknowledge({ResponseLevel? level});
@@ -319,8 +319,7 @@ abstract interface class InteractionCommandContextData implements InteractionCon
 /// You might also be interested in:
 /// - [InteractionCommandContextData], which exposes the data found in this context,
 /// - [CommandContext], the base class for all contexts representing a command execution.
-abstract interface class InteractionCommandContext
-    implements InteractionCommandContextData, CommandContext, InteractionInteractiveContext {}
+abstract interface class InteractionCommandContext implements InteractionCommandContextData, CommandContext, InteractionInteractiveContext {}
 
 /// Information about how a command should respond when using [InteractiveContext.respond].
 ///

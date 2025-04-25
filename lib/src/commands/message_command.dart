@@ -35,19 +35,12 @@ import 'options.dart';
 /// - [CommandsPlugin.addCommand], for adding commands to your bot;;
 /// - [ChatCommand], for creating chat commands;
 /// - [UserCommand], for creating user commands.
-class MessageCommand
-    with
-        ParentMixin<MessageContext>,
-        CheckMixin<MessageContext>,
-        OptionsMixin<MessageContext>
-    implements Command<MessageContext> {
+class MessageCommand with ParentMixin<MessageContext>, CheckMixin<MessageContext>, OptionsMixin<MessageContext> implements Command<MessageContext> {
   @override
   final String name;
 
-  final StreamController<MessageContext> _preCallController =
-      StreamController.broadcast();
-  final StreamController<MessageContext> _postCallController =
-      StreamController.broadcast();
+  final StreamController<MessageContext> _preCallController = StreamController.broadcast();
+  final StreamController<MessageContext> _postCallController = StreamController.broadcast();
 
   @override
   late final Stream<MessageContext> onPreCall = _preCallController.stream;
@@ -103,7 +96,7 @@ class MessageCommand
 
     _postCallController.add(context);
   }
-  
+
   @override
   CommandRegisterable<MessageContext> copyWith() {
     throw UnimplementedError();

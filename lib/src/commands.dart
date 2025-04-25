@@ -56,8 +56,7 @@ final Logger logger = Logger('Commands');
 /// - [addCommand], for adding commands to your bot;
 /// - [check], for adding checks to your bot;
 /// - [MessageCommand] and [UserCommand], for creating Message and User Commands respectively.
-class CommandsPlugin extends NyxxPlugin<NyxxGateway>
-    implements CommandGroup<CommandContext> {
+class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<CommandContext> {
   /// A function called to determine the prefix for a specific message.
   ///
   /// This function should return a [Pattern] that should match the start of the message content if
@@ -80,12 +79,9 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   /// - [mentionOr], which allows for commands to be executed with the client's mention (ping).
   final FutureOr<Pattern> Function(MessageCreateEvent)? prefix;
 
-  final StreamController<CommandsException> _onCommandErrorController =
-      StreamController.broadcast();
-  final StreamController<CommandContext> _onPreCallController =
-      StreamController.broadcast();
-  final StreamController<CommandContext> _onPostCallController =
-      StreamController.broadcast();
+  final StreamController<CommandsException> _onCommandErrorController = StreamController.broadcast();
+  final StreamController<CommandContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<CommandContext> _onPostCallController = StreamController.broadcast();
 
   /// A stream of [CommandsException]s that occur during a command's execution.
   ///
@@ -106,8 +102,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   /// - [CommandsException], the class all exceptions in nyxx_commands subclass;
   /// - [CallHooked.onPostCall], a stream that emits [CommandContext]s once a command completes
   /// successfully.
-  late final Stream<CommandsException> onCommandError =
-      _onCommandErrorController.stream;
+  late final Stream<CommandsException> onCommandError = _onCommandErrorController.stream;
 
   @override
   late final Stream<CommandContext> onPreCall = _onPreCallController.stream;
@@ -146,12 +141,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   final Map<String, ChatCommandComponent> _dynamicChatCommands = {};
 
   @override
-  Iterable<CommandRegisterable> get children => [
-        ..._userCommands.values,
-        ..._messageCommands.values,
-        ..._chatCommands.values,
-        ..._dynamicChatCommands.values
-      ];
+  Iterable<CommandRegisterable> get children => [..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values, ..._dynamicChatCommands.values];
 
   @override
   String get name => 'Commands';
@@ -172,8 +162,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
 
     if (options.logErrors) {
       onCommandError.listen(
-        (error) => logger.shout(
-            'Uncaught exception in command', error, error.stackTrace),
+        (error) => logger.shout('Uncaught exception in command', error, error.stackTrace),
       );
     }
   }
@@ -182,11 +171,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   Future<void> afterConnect(NyxxGateway client) async {
     attachedClients.add(client);
 
-    client.onMessageComponentInteraction
-        .map((event) => event.interaction)
-        .where((interaction) =>
-            interaction.data.type == MessageComponentType.button)
-        .listen(
+    client.onMessageComponentInteraction.map((event) => event.interaction).where((interaction) => interaction.data.type == MessageComponentType.button).listen(
       (interaction) async {
         try {
           await eventManager.processButtonInteraction(interaction);
@@ -198,8 +183,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
 
     client.onMessageComponentInteraction
         .map((event) => event.interaction)
-        .where((interaction) =>
-            interaction.data.type == MessageComponentType.stringSelect)
+        .where((interaction) => interaction.data.type == MessageComponentType.stringSelect)
         .listen(
       (interaction) async {
         try {
@@ -218,9 +202,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
       }
     });
 
-    client.onApplicationCommandInteraction
-        .map((event) => event.interaction)
-        .listen(
+    client.onApplicationCommandInteraction.map((event) => event.interaction).listen(
       (interaction) async {
         try {
           final applicationCommand = registeredCommands.singleWhere(
@@ -237,10 +219,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
               interaction,
               _messageCommands[applicationCommand.name]!,
             );
-          } else if (interaction.data.type ==
-              ApplicationCommandType.chatInput) {
-            final (command, options) =
-                _resolveChatCommand(interaction, applicationCommand);
+          } else if (interaction.data.type == ApplicationCommandType.chatInput) {
+            final (command, options) = _resolveChatCommand(interaction, applicationCommand);
 
             await eventManager.processChatInteraction(
               interaction,
@@ -254,30 +234,23 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
       },
     );
 
-    client.onApplicationCommandAutocompleteInteraction
-        .map((event) => event.interaction)
-        .listen((interaction) async {
+    client.onApplicationCommandAutocompleteInteraction.map((event) => event.interaction).listen((interaction) async {
       try {
         final applicationCommand = registeredCommands.singleWhere(
           (command) => command.id == interaction.data.id,
         );
 
-        final (command, options) =
-            _resolveChatCommand(interaction, applicationCommand);
+        final (command, options) = _resolveChatCommand(interaction, applicationCommand);
 
         final functionData = loadFunctionData(command.execute);
-        final focusedOption =
-            options.singleWhere((element) => element.isFocused == true);
-        final focusedParameter = functionData.parametersData
-            .singleWhere((element) => element.name == focusedOption.name);
+        final focusedOption = options.singleWhere((element) => element.isFocused == true);
+        final focusedParameter = functionData.parametersData.singleWhere((element) => element.name == focusedOption.name);
 
-        final converter = focusedParameter.converterOverride ??
-            getConverter(focusedParameter.type);
+        final converter = focusedParameter.converterOverride ?? getConverter(focusedParameter.type);
 
         await eventManager.processAutocompleteInteraction(
           interaction,
-          (focusedParameter.autocompleteOverride ??
-              converter?.autocompleteCallback)!,
+          (focusedParameter.autocompleteOverride ?? converter?.autocompleteCallback)!,
           command,
         );
       } on CommandsException catch (e) {
@@ -295,8 +268,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
     ApplicationCommand applicationCommand,
   ) {
     List<InteractionOption> options = interaction.data.options ?? [];
-    ChatCommandComponent command = _chatCommands[applicationCommand.name] ??
-        _dynamicChatCommands['${interaction.guildId}-${applicationCommand.name}']!;
+    ChatCommandComponent command = _chatCommands[applicationCommand.name] ?? _dynamicChatCommands['${interaction.guildId}-${applicationCommand.name}']!;
 
     while (command is! ChatCommand) {
       assert(options.isNotEmpty);
@@ -304,8 +276,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
       final subcommandOption = options.single;
 
       options = subcommandOption.options ?? [];
-      command = command.children
-          .singleWhere((element) => element.name == subcommandOption.name);
+      command = command.children.singleWhere((element) => element.name == subcommandOption.name);
     }
 
     return (command, options);
@@ -318,8 +289,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   }
 
   @internal
-  Future<void> syncCommand(NyxxGateway client,
-      {required final CommandRegisterable<CommandContext> command}) async {
+  Future<void> syncCommand(NyxxGateway client, {required final CommandRegisterable<CommandContext> command}) async {
     final cmd = await _buildCommand(command);
 
     if (cmd == null) {
@@ -328,9 +298,8 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
 
     final (guilds, builder) = cmd;
 
-    final commandResult = guilds.isEmpty
-        ? [await client.commands.create(builder)]
-        : await guilds.nonNulls.map((guildId) => client.guilds[guildId].commands.create(builder)).wait;
+    final commandResult =
+        guilds.isEmpty ? [await client.commands.create(builder)] : await guilds.nonNulls.map((guildId) => client.guilds[guildId].commands.create(builder)).wait;
 
     registeredCommands.addAll(commandResult);
 
@@ -341,22 +310,17 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
     final builders = await _buildCommands();
 
     final commands = await Future.wait(builders.entries.map(
-      (e) => e.key == null
-          ? client.commands.bulkOverride(e.value)
-          : client.guilds[e.key!].commands.bulkOverride(e.value),
+      (e) => e.key == null ? client.commands.bulkOverride(e.value) : client.guilds[e.key!].commands.bulkOverride(e.value),
     ));
 
     registeredCommands.addAll(commands.expand((_) => _));
 
-    logger.info(
-        'Synced ${builders.values.fold(0, (p, e) => p + e.length)} commands to Discord');
+    logger.info('Synced ${builders.values.fold(0, (p, e) => p + e.length)} commands to Discord');
   }
 
-  Future<(Iterable<Snowflake?>, ApplicationCommandBuilder)?> _buildCommand(
-      CommandRegisterable<CommandContext> command) async {
-    final shouldRegister = command is! ChatCommandComponent ||
-        command.hasSlashCommand ||
-        (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly);
+  Future<(Iterable<Snowflake?>, ApplicationCommandBuilder)?> _buildCommand(CommandRegisterable<CommandContext> command) async {
+    final shouldRegister =
+        command is! ChatCommandComponent || command.hasSlashCommand || (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly);
     if (!shouldRegister) {
       return null;
     }
@@ -410,15 +374,12 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
     return (guilds, builder);
   }
 
-  Future<Map<Snowflake?, List<ApplicationCommandBuilder>>>
-      _buildCommands() async {
+  Future<Map<Snowflake?, List<ApplicationCommandBuilder>>> _buildCommands() async {
     final result = <Snowflake?, List<ApplicationCommandBuilder>>{null: []};
 
     for (final command in children) {
-      final shouldRegister = command is! ChatCommandComponent ||
-          command.hasSlashCommand ||
-          (command is ChatCommand &&
-              command.resolvedOptions.type != CommandType.textOnly);
+      final shouldRegister =
+          command is! ChatCommandComponent || command.hasSlashCommand || (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly);
       if (!shouldRegister) {
         continue;
       }
@@ -560,8 +521,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
     return null;
   }
 
-  void addCommandOnTheFly(CommandRegisterable<CommandContext> command,
-      {required Snowflake guildId}) {
+  void addCommandOnTheFly(CommandRegisterable<CommandContext> command, {required Snowflake guildId}) {
     if (attachedClients.isNotEmpty) {
       scheduleMicrotask(() {
         for (final client in attachedClients) {
@@ -589,8 +549,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
     }
   }
 
-  void removeCommandOnTheFly(CommandRegisterable<CommandContext> command,
-      {required Snowflake guildId}) {
+  void removeCommandOnTheFly(CommandRegisterable<CommandContext> command, {required Snowflake guildId}) {
     if (command is ChatCommandComponent) {
       _dynamicChatCommands.remove('$guildId-${command.name}');
       for (final alias in command.aliases) {
@@ -646,14 +605,12 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
 
     if (command is ChatCommandComponent) {
       if (_chatCommands.containsKey(command.name)) {
-        throw CommandRegistrationError(
-            'Command with name "${command.name}" already exists');
+        throw CommandRegistrationError('Command with name "${command.name}" already exists');
       }
 
       for (final alias in command.aliases) {
         if (_chatCommands.containsKey(alias)) {
-          throw CommandRegistrationError(
-              'Command with alias "$alias" already exists');
+          throw CommandRegistrationError('Command with alias "$alias" already exists');
         }
       }
 
@@ -667,8 +624,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
       }
     } else if (command is UserCommand) {
       if (_userCommands.containsKey(command.name)) {
-        throw CommandRegistrationError(
-            'User Command with name "${command.name}" already exists');
+        throw CommandRegistrationError('User Command with name "${command.name}" already exists');
       }
 
       _userCommands[command.name] = command;
@@ -676,8 +632,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
       logger.info('Registered User Command "${command.name}"');
     } else if (command is MessageCommand) {
       if (_messageCommands.containsKey(command.name)) {
-        throw CommandRegistrationError(
-            'Message Command with name "${command.name}" already exists');
+        throw CommandRegistrationError('Message Command with name "${command.name}" already exists');
       }
 
       _messageCommands[command.name] = command;
@@ -691,12 +646,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   @override
   ChatCommand? getCommand(StringView view, [Snowflake? guildId]) => getCommandHelper(
         view,
-        {
-          ..._chatCommands,
-          if (guildId != null)
-            ...Map.fromEntries(
-                _dynamicChatCommands.entries.where((e) => e.key.startsWith(guildId.toString())))
-        },
+        {..._chatCommands, if (guildId != null) ...Map.fromEntries(_dynamicChatCommands.entries.where((e) => e.key.startsWith(guildId.toString())))},
         guildId,
       );
 
@@ -710,9 +660,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
     }
 
     if (guildId != null) {
-      for (final command in Set.of(_dynamicChatCommands.entries
-          .where((c) => c.key.startsWith(guildId.toString()))
-          .map((c) => c.value))) {
+      for (final command in Set.of(_dynamicChatCommands.entries.where((c) => c.key.startsWith(guildId.toString())).map((c) => c.value))) {
         yield* command.walkCommands(guildId);
       }
     }
@@ -732,6 +680,5 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway>
   }
 
   @override
-  String toString() =>
-      'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
+  String toString() => 'CommandsPlugin[commands=${List.of(walkCommands())}, converters=${List.of(_converters.values)}]';
 }

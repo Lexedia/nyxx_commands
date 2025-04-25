@@ -312,7 +312,7 @@ class StringView {
   }
 
   /// Get a string from the current buffer until [p] is matched.
-  /// 
+  ///
   /// This method does not consume [p].
   ///
   /// If [p] is not found in the current buffer, this method will return a string from the current
@@ -370,6 +370,5 @@ class StringView {
   List<String> toList() => [for (; !eof;) getQuotedWord()];
 
   @override
-  String toString() =>
-      'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
+  String toString() => 'StringView[index=$index (current="${eof ? '<eof>' : current}"), end=$end, buffer="$buffer"]';
 }

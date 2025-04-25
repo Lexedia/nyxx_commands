@@ -31,22 +31,15 @@ import 'options.dart';
 /// - [CommandsPlugin.addCommand], for adding commands to your bot;
 /// - [ChatCommand], for creating chat commands;
 /// - [MessageCommand], for creating message commands.
-class UserCommand
-    with
-        ParentMixin<UserContext>,
-        CheckMixin<UserContext>,
-        OptionsMixin<UserContext>
-    implements Command<UserContext> {
+class UserCommand with ParentMixin<UserContext>, CheckMixin<UserContext>, OptionsMixin<UserContext> implements Command<UserContext> {
   @override
   final String name;
 
   @override
   final Function(UserContext) execute;
 
-  final StreamController<UserContext> _preCallController =
-      StreamController.broadcast();
-  final StreamController<UserContext> _postCallController =
-      StreamController.broadcast();
+  final StreamController<UserContext> _preCallController = StreamController.broadcast();
+  final StreamController<UserContext> _postCallController = StreamController.broadcast();
 
   @override
   late final Stream<UserContext> onPreCall = _preCallController.stream;
@@ -99,7 +92,7 @@ class UserCommand
 
     _postCallController.add(context);
   }
-  
+
   @override
   CommandRegisterable<UserContext> copyWith() {
     throw UnimplementedError();

@@ -40,8 +40,7 @@ class ParameterData<T> {
 
   final Converter<dynamic>? converterOverride;
 
-  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)?
-      autocompleteOverride;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext)? autocompleteOverride;
 
   const ParameterData({
     required this.name,

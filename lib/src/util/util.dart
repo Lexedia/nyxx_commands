@@ -92,8 +92,7 @@ class Description {
   const Description(this.value, [this.localizedDescriptions]);
 
   @override
-  String toString() =>
-      'Description[value="$value", localizedDescription=$localizedDescriptions]';
+  String toString() => 'Description[value="$value", localizedDescription=$localizedDescriptions]';
 }
 
 /// An annotation used to restrict input to a set of choices for a given parameter.
@@ -246,8 +245,7 @@ class UseConverter {
 ///   of a given type.
 class Autocomplete {
   /// The autocomplete handler to use.
-  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(
-      AutocompleteContext) callback;
+  final FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext) callback;
 
   /// Create a new [Autocomplete].
   ///
@@ -277,8 +275,7 @@ Future<String> Function(MessageCreateEvent) mentionOr(
     RegExpMatch? match = _mentionPattern.firstMatch(event.message.content);
 
     if (match != null) {
-      if (int.parse(match.group(1)!) ==
-          (await event.gateway.client.users.fetchCurrentUser()).id.value) {
+      if (int.parse(match.group(1)!) == (await event.gateway.client.users.fetchCurrentUser()).id.value) {
         return match.group(0)!;
       }
     }
@@ -300,13 +297,11 @@ Future<String> Function(MessageCreateEvent) mentionOr(
 /// ```
 /// ![](https://user-images.githubusercontent.com/54505189/156937528-df54a2ba-627d-4f54-b0bc-ad7cb6321965.png)
 /// ![](https://user-images.githubusercontent.com/54505189/156937561-9df9e6cf-6595-465d-895a-aaca5d6ff066.png)
-Future<String> Function(MessageCreateEvent) dmOr(
-    FutureOr<String> Function(MessageCreateEvent) defaultPrefix) {
+Future<String> Function(MessageCreateEvent) dmOr(FutureOr<String> Function(MessageCreateEvent) defaultPrefix) {
   return (event) async {
     String found = await defaultPrefix(event);
 
-    if (event.guild != null ||
-        StringView(event.message.content).skipString(found)) {
+    if (event.guild != null || StringView(event.message.content).skipString(found)) {
       return found;
     }
 
@@ -346,8 +341,7 @@ ChatCommand? getCommandHelper(StringView view, Map<String, ChatCommandComponent>
 
   try {
     ChatCommandComponent child = children.entries.singleWhere((childEntry) {
-      bool isCaseInsensitive =
-          childEntry.value.resolvedOptions.caseInsensitiveCommands!;
+      bool isCaseInsensitive = childEntry.value.resolvedOptions.caseInsensitiveCommands!;
 
       if (isCaseInsensitive) {
         return (lowerCaseName == childEntry.key.toLowerCase()) || ('$guildId-$lowerCaseName' == childEntry.key.toLowerCase());
@@ -360,9 +354,7 @@ ChatCommand? getCommandHelper(StringView view, Map<String, ChatCommandComponent>
 
     // If no command further down the tree was found, return the child if it is a chat command
     // that can be invoked from a text message (not slash only).
-    if (commandFromChild == null &&
-        child is ChatCommand &&
-        child.resolvedOptions.type != CommandType.slashOnly) {
+    if (commandFromChild == null && child is ChatCommand && child.resolvedOptions.type != CommandType.slashOnly) {
       return child;
     }
 
@@ -439,14 +431,10 @@ class ComponentId {
   ///
   /// [expirationTime] should be the time after which the handler will expire. [allowedUser] should
   /// be the ID of the user allows to interact with this component.
-  factory ComponentId.generate(
-          {Duration? expirationTime, Snowflake? allowedUser}) =>
-      ComponentId(
+  factory ComponentId.generate({Duration? expirationTime, Snowflake? allowedUser}) => ComponentId(
         uniqueIdentifier: _uniqueIdentifier++,
         sessionStartTime: currentSessionStartTime,
-        expiresAt: expirationTime != null
-            ? DateTime.now().add(expirationTime).toUtc()
-            : null,
+        expiresAt: expirationTime != null ? DateTime.now().add(expirationTime).toUtc() : null,
         status: ComponentIdStatus.ok,
         allowedUser: allowedUser,
       );
@@ -507,8 +495,7 @@ class ComponentId {
   //   19 - allowedUser
   // Total: 96, 4 free (could be used up by uniqueIdentifier)
   // TODO: Serialize to binary => encode base64?
-  String toString() =>
-      'nyxx_commands/$uniqueIdentifier/$sessionStartTime/$expiresAt/$allowedUser';
+  String toString() => 'nyxx_commands/$uniqueIdentifier/$sessionStartTime/$expiresAt/$allowedUser';
 
   @override
   bool operator ==(Object other) =>
@@ -520,8 +507,7 @@ class ComponentId {
           other.allowedUser == allowedUser);
 
   @override
-  int get hashCode =>
-      Object.hash(uniqueIdentifier, sessionStartTime, expiresAt, allowedUser);
+  int get hashCode => Object.hash(uniqueIdentifier, sessionStartTime, expiresAt, allowedUser);
 }
 
 /// The status of the handler associated with a [ComponentId].
@@ -565,8 +551,7 @@ enum ComponentIdStatus {
   }
 }
 
-class MessageCreateUpdateBuilder extends MessageBuilder
-    implements MessageUpdateBuilder {
+class MessageCreateUpdateBuilder extends MessageBuilder implements MessageUpdateBuilder {
   MessageCreateUpdateBuilder({
     super.content,
     super.nonce,
@@ -634,9 +619,7 @@ Future<Permissions> computePermissions(
 
     Flags<Permissions> permissions = basePermissions;
 
-    final everyoneOverwrite = channel.permissionOverwrites
-        .where((overwrite) => overwrite.id == guild.id)
-        .singleOrNull;
+    final everyoneOverwrite = channel.permissionOverwrites.where((overwrite) => overwrite.id == guild.id).singleOrNull;
     if (everyoneOverwrite != null) {
       permissions &= ~everyoneOverwrite.deny;
       permissions |= everyoneOverwrite.allow;
@@ -646,9 +629,7 @@ Future<Permissions> computePermissions(
     Flags<Permissions> deny = Permissions(0);
 
     for (final roleId in member.roleIds) {
-      final roleOverwrite = channel.permissionOverwrites
-          .where((overwrite) => overwrite.id == roleId)
-          .singleOrNull;
+      final roleOverwrite = channel.permissionOverwrites.where((overwrite) => overwrite.id == roleId).singleOrNull;
       if (roleOverwrite != null) {
         allow |= roleOverwrite.allow;
         deny |= roleOverwrite.deny;
@@ -658,9 +639,7 @@ Future<Permissions> computePermissions(
     permissions &= ~deny;
     permissions |= allow;
 
-    final memberOverwrite = channel.permissionOverwrites
-        .where((overwrite) => overwrite.id == member.id)
-        .singleOrNull;
+    final memberOverwrite = channel.permissionOverwrites.where((overwrite) => overwrite.id == member.id).singleOrNull;
     if (memberOverwrite != null) {
       permissions &= ~memberOverwrite.deny;
       permissions |= memberOverwrite.allow;

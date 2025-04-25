@@ -24,8 +24,7 @@ class EventManager {
   /// The [CommandsPlugin] this event manager is associated with.
   final CommandsPlugin commands;
 
-  final Map<RuntimeType<dynamic>,
-      Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
+  final Map<RuntimeType<dynamic>, Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
 
   /// Create a new [EventManager].
   EventManager(this.commands);
@@ -103,8 +102,7 @@ class EventManager {
   ///
   /// If [id] has an expiration time, the future will complete with an error once that time is
   /// elapsed.
-  Future<SelectMenuContext<List<String>>> nextSelectMenuEvent(ComponentId id) =>
-      _nextComponentEvent(id);
+  Future<SelectMenuContext<List<String>>> nextSelectMenuEvent(ComponentId id) => _nextComponentEvent(id);
 
   /// Stop listening for events from the component with id [id].
   ///
@@ -118,8 +116,7 @@ class EventManager {
   /// The handler for button [MessageComponentInteraction]s.
   ///
   /// Attach to [NyxxGateway.onMessageComponentInteraction] where the component is a button.
-  Future<void> processButtonInteraction(MessageComponentInteraction interaction) =>
-      _processComponentEvent(
+  Future<void> processButtonInteraction(MessageComponentInteraction interaction) => _processComponentEvent(
         interaction,
         commands.contextManager.createButtonComponentContext,
       );
@@ -127,8 +124,7 @@ class EventManager {
   /// The handler for select menu [MessageComponentInteraction]s.
   ///
   /// Attach to [NyxxGateway.onMessageComponentInteraction] where the component is a select menu.
-  Future<void> processSelectMenuInteraction(MessageComponentInteraction interaction) =>
-      _processComponentEvent<SelectMenuContext<List<String>>>(
+  Future<void> processSelectMenuInteraction(MessageComponentInteraction interaction) => _processComponentEvent<SelectMenuContext<List<String>>>(
         interaction,
         (event) => commands.contextManager.createSelectMenuContext(event, event.data.values!),
       );
@@ -141,23 +137,25 @@ class EventManager {
 
     final message = event.message;
 
+    try {
+      await message.channel.get();
+    } on HttpResponseError {
+      return;
+    }
+
     Pattern prefix = await commands.prefix!(event);
     StringView view = StringView(message.content);
 
     Match? matchedPrefix = view.skipPattern(prefix, caseInsensitive: commands.options.caseInsensitiveCommands);
 
     if (matchedPrefix != null) {
-      ChatContext context = await commands.contextManager
-          .createMessageChatContext(message, view, matchedPrefix.group(0)!);
+      ChatContext context = await commands.contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
 
-      if (message.author is User &&
-          (message.author as User).isBot &&
-          !context.command.resolvedOptions.acceptBotCommands!) {
+      if (message.author is User && (message.author as User).isBot && !context.command.resolvedOptions.acceptBotCommands!) {
         return;
       }
 
-      if (message.author.id == await event.gateway.client.user.get() &&
-          !context.command.resolvedOptions.acceptSelfCommands!) {
+      if (message.author.id == await event.gateway.client.user.get() && !context.command.resolvedOptions.acceptSelfCommands!) {
         return;
       }
 
@@ -249,8 +247,7 @@ class EventManager {
     FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext) callback,
     ChatCommand command,
   ) async {
-    AutocompleteContext context =
-        await commands.contextManager.createAutocompleteContext(interactionEvent, command);
+    AutocompleteContext context = await commands.contextManager.createAutocompleteContext(interactionEvent, command);
 
     try {
       Iterable<CommandOptionChoiceBuilder<dynamic>>? choices = await callback(context);

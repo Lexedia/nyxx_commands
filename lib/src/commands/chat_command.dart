@@ -45,10 +45,8 @@ enum CommandType {
 }
 
 mixin ChatGroupMixin implements ChatCommandComponent {
-  final StreamController<ChatContext> _onPreCallController =
-      StreamController.broadcast();
-  final StreamController<ChatContext> _onPostCallController =
-      StreamController.broadcast();
+  final StreamController<ChatContext> _onPreCallController = StreamController.broadcast();
+  final StreamController<ChatContext> _onPostCallController = StreamController.broadcast();
 
   @override
   late final Stream<ChatContext> onPreCall = _onPreCallController.stream;
@@ -61,20 +59,17 @@ mixin ChatGroupMixin implements ChatCommandComponent {
   @override
   void addCommand(ChatCommandComponent command) {
     if (_childrenMap.containsKey(command.name)) {
-      throw CommandRegistrationError(
-          'Command with name "$fullName ${command.name}" already exists');
+      throw CommandRegistrationError('Command with name "$fullName ${command.name}" already exists');
     }
 
     for (final alias in command.aliases) {
       if (_childrenMap.containsKey(alias)) {
-        throw CommandRegistrationError(
-            'Command with alias "$fullName $alias" already exists');
+        throw CommandRegistrationError('Command with alias "$fullName $alias" already exists');
       }
     }
 
     if (parent != null) {
-      logger.warning(
-          'Registering commands to a group after it is registered might cause slash '
+      logger.warning('Registering commands to a group after it is registered might cause slash '
           'commands to have incomplete definitions');
     }
 
@@ -104,21 +99,13 @@ mixin ChatGroupMixin implements ChatCommandComponent {
   }
 
   @override
-  ChatCommand? getCommand(StringView view, [Snowflake? guildId]) =>
-      getCommandHelper(view, _childrenMap, guildId);
+  ChatCommand? getCommand(StringView view, [Snowflake? guildId]) => getCommandHelper(view, _childrenMap, guildId);
 
   @override
-  String get fullName =>
-      (parent is! ChatCommandComponent
-          ? ''
-          : '${(parent as ChatCommandComponent).fullName} ') +
-      name;
+  String get fullName => (parent is! ChatCommandComponent ? '' : '${(parent as ChatCommandComponent).fullName} ') + name;
 
   @override
-  bool get hasSlashCommand => children.any((child) =>
-      (child is ChatCommand &&
-          child.resolvedOptions.type != CommandType.textOnly) ||
-      child.hasSlashCommand);
+  bool get hasSlashCommand => children.any((child) => (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) || child.hasSlashCommand);
 
   @override
   List<CommandOptionBuilder> getOptions(CommandsPlugin commands) {
@@ -136,8 +123,7 @@ mixin ChatGroupMixin implements ChatCommandComponent {
             options: List.of(child.getOptions(commands)),
           ),
         );
-      } else if (child is ChatCommand &&
-          child.resolvedOptions.type != CommandType.textOnly) {
+      } else if (child is ChatCommand && child.resolvedOptions.type != CommandType.textOnly) {
         options.add(
           CommandOptionBuilder(
             type: CommandOptionType.subCommand,
@@ -163,13 +149,7 @@ mixin ChatGroupMixin implements ChatCommandComponent {
 ///
 /// You might also be interested in:
 /// - [ChatCommand], for creating commands that can be added to groups.
-class ChatGroup
-    with
-        ChatGroupMixin,
-        ParentMixin<ChatContext>,
-        CheckMixin<ChatContext>,
-        OptionsMixin<ChatContext>
-    implements ChatCommandComponent {
+class ChatGroup with ChatGroupMixin, ParentMixin<ChatContext>, CheckMixin<ChatContext>, OptionsMixin<ChatContext> implements ChatCommandComponent {
   @override
   final List<String> aliases;
 
@@ -227,8 +207,7 @@ class ChatGroup
         aliases: List.of(aliases),
         checks: List.of(checks),
         children: List.of(children.map((child) => child.copyWith() as ChatCommandComponent)),
-        localizedDescriptions:
-            localizedDescriptions == null ? null : Map.of(localizedDescriptions!),
+        localizedDescriptions: localizedDescriptions == null ? null : Map.of(localizedDescriptions!),
         localizedNames: localizedNames == null ? null : Map.of(localizedNames!),
         options: options,
       );
@@ -261,11 +240,7 @@ class ChatGroup
 /// - [MessageCommand], for creating Message Commands;
 /// - [UserCommand], for creating User Commands.
 class ChatCommand
-    with
-        ChatGroupMixin,
-        ParentMixin<ChatContext>,
-        CheckMixin<ChatContext>,
-        OptionsMixin<ChatContext>
+    with ChatGroupMixin, ParentMixin<ChatContext>, CheckMixin<ChatContext>, OptionsMixin<ChatContext>
     implements Command<ChatContext>, ChatCommandComponent {
   @override
   final String name;
@@ -365,22 +340,14 @@ class ChatCommand
       throw CommandRegistrationError('Invalid command name "$name"');
     }
 
-    if ((localizedNames != null &&
-        localizedNames!.values.any((names) =>
-            !commandNameRegexp.hasMatch(names) ||
-            names != names.toLowerCase()))) {
-      throw CommandRegistrationError(
-          'Invalid localized name for command "$name".');
+    if ((localizedNames != null && localizedNames!.values.any((names) => !commandNameRegexp.hasMatch(names) || names != names.toLowerCase()))) {
+      throw CommandRegistrationError('Invalid localized name for command "$name".');
     }
 
     RuntimeType<ChatContext> contextType = switch (resolvedOptions.type) {
-      CommandType.textOnly =>
-        const RuntimeType<MessageChatContext>.allowingDynamic(),
-      CommandType.slashOnly =>
-        const RuntimeType<InteractionChatContext>.allowingDynamic(),
-      null ||
-      CommandType.all =>
-        const RuntimeType<ChatContext>.allowingDynamic(),
+      CommandType.textOnly => const RuntimeType<MessageChatContext>.allowingDynamic(),
+      CommandType.slashOnly => const RuntimeType<InteractionChatContext>.allowingDynamic(),
+      null || CommandType.all => const RuntimeType<ChatContext>.allowingDynamic(),
     };
 
     _loadArguments(execute, contextType);
@@ -402,28 +369,23 @@ class ChatCommand
     _functionData = loadFunctionData(fn);
 
     if (_functionData.parametersData.isEmpty) {
-      throw CommandRegistrationError(
-          'Command callback function must have a Context parameter');
+      throw CommandRegistrationError('Command callback function must have a Context parameter');
     }
 
     if (!contextType.isSupertypeOf(_functionData.parametersData.first.type)) {
-      throw CommandRegistrationError(
-          'The first parameter of a command callback must be of type $contextType');
+      throw CommandRegistrationError('The first parameter of a command callback must be of type $contextType');
     }
 
     // Skip context parameter
     for (final parameter in _functionData.parametersData.skip(1)) {
       if (parameter.description != null) {
-        if (parameter.description!.isEmpty ||
-            parameter.description!.length > 100) {
-          throw CommandRegistrationError(
-              'Descriptions must not be empty nor longer than 100 characters');
+        if (parameter.description!.isEmpty || parameter.description!.length > 100) {
+          throw CommandRegistrationError('Descriptions must not be empty nor longer than 100 characters');
         }
       }
 
       if (parameter.converterOverride != null) {
-        if (!parameter.type
-            .isSupertypeOf(parameter.converterOverride!.output)) {
+        if (!parameter.type.isSupertypeOf(parameter.converterOverride!.output)) {
           throw CommandRegistrationError('Invalid converter override');
         }
       }
@@ -497,8 +459,7 @@ class ChatCommand
     try {
       await Function.apply(execute, [context, ...context.arguments]);
     } catch (e, s) {
-      Error.throwWithStackTrace(
-          UncaughtException(e, context)..stackTrace = s, s);
+      Error.throwWithStackTrace(UncaughtException(e, context)..stackTrace = s, s);
     }
 
     _onPostCallController.add(context);
@@ -510,15 +471,13 @@ class ChatCommand
       List<CommandOptionBuilder> options = [];
 
       for (final parameter in _functionData.parametersData.skip(1)) {
-        Converter<dynamic>? argumentConverter = parameter.converterOverride ??
-            commands.getConverter(parameter.type);
+        Converter<dynamic>? argumentConverter = parameter.converterOverride ?? commands.getConverter(parameter.type);
 
-        Iterable<CommandOptionChoiceBuilder<dynamic>>? choices =
-            parameter.choices?.entries.indexed.map((entry) => CommandOptionChoiceBuilder(
-                  name: entry.$2.key,
-                  value: entry.$2.value,
-                  nameLocalizations: parameter.localizedChoices?[entry.$1],
-                ));
+        Iterable<CommandOptionChoiceBuilder<dynamic>>? choices = parameter.choices?.entries.indexed.map((entry) => CommandOptionChoiceBuilder(
+              name: entry.$2.key,
+              value: entry.$2.value,
+              nameLocalizations: parameter.localizedChoices?[entry.$1],
+            ));
 
         choices ??= argumentConverter?.choices;
 
@@ -530,9 +489,7 @@ class ChatCommand
           descriptionLocalizations: parameter.localizedDescriptions,
           isRequired: !parameter.isOptional,
           choices: choices?.toList(),
-          hasAutocomplete: (parameter.autocompleteOverride ??
-                  argumentConverter?.autocompleteCallback) !=
-              null,
+          hasAutocomplete: (parameter.autocompleteOverride ?? argumentConverter?.autocompleteCallback) != null,
         );
 
         argumentConverter?.processOptionCallback?.call(builder);
@@ -550,14 +507,11 @@ class ChatCommand
   @override
   void addCommand(CommandRegisterable<ChatContext> command) {
     if (command is! ChatCommandComponent) {
-      throw CommandsError(
-          'All child commands of chat groups or commands must implement IChatCommandComponent');
+      throw CommandsError('All child commands of chat groups or commands must implement IChatCommandComponent');
     }
 
     if (resolvedOptions.type != CommandType.textOnly) {
-      if (command.hasSlashCommand ||
-          (command is ChatCommand &&
-              command.resolvedOptions.type != CommandType.textOnly)) {
+      if (command.hasSlashCommand || (command is ChatCommand && command.resolvedOptions.type != CommandType.textOnly)) {
         throw CommandRegistrationError('Cannot nest Slash commands!');
       }
     }
@@ -589,8 +543,7 @@ class ChatCommand
         aliases: List.of(aliases),
         checks: List.of(checks),
         children: List.of(children.map((child) => child.copyWith() as ChatCommandComponent)),
-        localizedDescriptions:
-            localizedDescriptions == null ? null : Map.of(localizedDescriptions!),
+        localizedDescriptions: localizedDescriptions == null ? null : Map.of(localizedDescriptions!),
         localizedNames: localizedNames == null ? null : Map.of(localizedNames!),
         // Not copying options should be okay
         options: options,

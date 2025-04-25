@@ -56,8 +56,7 @@ abstract class Options {
 ///
 /// You might also be interested in:
 /// - [CommandGroup], the interface for groups that [CommandRegisterable]s can be added to.
-abstract class CommandRegisterable<T extends CommandContext>
-    implements CallHooked<T>, Checked, Options {
+abstract class CommandRegisterable<T extends CommandContext> implements CallHooked<T>, Checked, Options {
   /// The name of this child.
   ///
   /// Generally, this will have to obey [Discord's command naming restrictions](https://discord.com/developers/docs/interactions/application-commands#application-command-object-application-command-naming)
@@ -103,10 +102,8 @@ abstract class CommandRegisterable<T extends CommandContext>
   /// ![](https://user-images.githubusercontent.com/74512338/173841767-6e2c5215-ebc3-4a89-a2ac-8115949e2f0b.png)
   Map<Locale, String>? get localizedNames;
 
-
   /// The type
   List<ApplicationIntegrationType> get integrationTypes;
-
 
   List<InteractionContextType> get contexts;
 
@@ -174,8 +171,7 @@ abstract class Command<T extends CommandContext> implements CommandRegisterable<
 /// You might also be interested in:
 /// - [ChatCommand] and [ChatGroup], the concrete implementations of elements in a chat command
 ///   tree.
-abstract class ChatCommandComponent
-    implements CommandRegisterable<ChatContext>, CommandGroup<ChatContext> {
+abstract class ChatCommandComponent implements CommandRegisterable<ChatContext>, CommandGroup<ChatContext> {
   /// The description of this entity.
   ///
   /// This must be a non-empty string less than 100 characters in length.
