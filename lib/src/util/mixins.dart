@@ -841,7 +841,13 @@ mixin MessageRespondMixin implements InteractiveMixin {
     if (builder.referencedMessage == null) {
       builder.referencedMessage ??= MessageReferenceBuilder.reply(messageId: message.id);
 
-      if (level.mention case final shouldMention?) {
+      if (builder.referencedMessage?.type == MessageReferenceType.forward) {
+        return channel.sendMessage(builder);
+      }
+
+      if ((level.mention ??
+              _nearestCommandContext.command.resolvedOptions.defaultResponseLevel?.mention)
+          case final shouldMention?) {
         final allowedMentions = builder.allowedMentions ?? AllowedMentions();
         final replyMentions = AllowedMentions(repliedUser: shouldMention);
         builder.allowedMentions =

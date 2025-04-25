@@ -123,8 +123,10 @@ class StringView {
   /// You might also be interested in:
   /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
   /// - [skipString], for skipping arbitrary strings.
-  Match? skipPattern(Pattern p) {
-    Match? match = p.matchAsPrefix(buffer.substring(index));
+  Match? skipPattern(Pattern p, {bool caseInsensitive = false}) {
+    final substr = buffer.substring(index);
+
+    Match? match = p.matchAsPrefix(caseInsensitive ? substr.toLowerCase() : substr);
 
     if (match != null) {
       history.add(index);
@@ -141,10 +143,14 @@ class StringView {
   /// You might also be interested in:
   /// - [skipWhitespace], for skipping arbitrary spans of whitespace.
   /// - [skipString], for skipping arbitrary strings.
-  Match? skipFirst(Pattern p) {
+  Match? skipFirst(Pattern p, {bool caseInsensitive = false}) {
+    final substr = buffer.substring(index);
+
+    final str = caseInsensitive ? substr.toLowerCase() : substr;
+
     final match = switch (p) {
-      String s => s.matchAsPrefix(buffer.substring(index)),
-      RegExp r => r.firstMatch(buffer.substring(index)),
+      String s => s.matchAsPrefix(str),
+      RegExp r => r.firstMatch(str),
       _ => throw ArgumentError('Unsupported pattern type: $p'),
     };
 

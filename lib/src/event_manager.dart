@@ -144,7 +144,7 @@ class EventManager {
     Pattern prefix = await commands.prefix!(event);
     StringView view = StringView(message.content);
 
-    Match? matchedPrefix = view.skipPattern(prefix);
+    Match? matchedPrefix = view.skipPattern(prefix, caseInsensitive: commands.options.caseInsensitiveCommands);
 
     if (matchedPrefix != null) {
       ChatContext context = await commands.contextManager
