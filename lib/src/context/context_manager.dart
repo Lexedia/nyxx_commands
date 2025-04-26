@@ -121,7 +121,13 @@ class ContextManager {
     final client = interaction.manager.client as NyxxGateway;
 
     User targetUser = await client.users[interaction.data.targetId!].get();
-    Guild? guild = await interaction.guild?.get();
+    Guild? guild;
+
+    try {
+      guild = await interaction.guild?.get();
+    } on HttpResponseError {
+      guild = null;
+    }
 
     TextChannel channel = interaction.context == InteractionContextType.privateChannel
         ? await (() async {
