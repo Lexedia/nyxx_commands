@@ -26,8 +26,19 @@ class EventManager {
 
   final Map<RuntimeType<dynamic>, Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
 
+  late final Map<User, Message> lastFailedTries = {};
+
   /// Create a new [EventManager].
-  EventManager(this.commands);
+  EventManager(this.commands) {
+    // Periodically evicts failed tries to not overpopulate the map
+    Timer.periodic(const Duration(seconds: 30), (_) {
+      final now = DateTime.timestamp();
+
+      // Although 7 seconds may seem a trivial number, increasing to 10 would lead make little to no difference.
+      // 7 seconds is enough for a user to decide if they want to really execute the command, or just it was a random message.
+      lastFailedTries.removeWhere((_, m) => m.id.timestamp.toUtc().difference(now) > const Duration(seconds: 7));
+    });
+  }
 
   Future<T> _nextComponentEvent<T>(ComponentId id) {
     assert(T != dynamic);
@@ -129,6 +140,49 @@ class EventManager {
         (event) => commands.contextManager.createSelectMenuContext(event, event.data.values!),
       );
 
+  /// A handler for [MessageUpdateEvent]s
+  ///
+  /// Attach to [NyxxGateway.onMessageUpdate].
+  Future<void> processMessageUpdateEvent(MessageUpdateEvent event) async {
+    final message = await event.message.get();
+    final oldMessage = lastFailedTries[message.author];
+
+    if (oldMessage == null) {
+      // Don't bother.
+      return;
+    }
+
+    Pattern prefix = await commands
+        .prefix!(MessageCreateEvent(gateway: event.gateway, guildId: event.guildId, member: event.member, mentions: event.mentions ?? [], message: message));
+    StringView view = StringView(message.content);
+
+    Match? matchedPrefix = view.skipPattern(prefix, caseInsensitive: commands.options.caseInsensitiveCommands);
+
+    if (matchedPrefix != null) {
+      ChatContext context;
+
+      try {
+        context = await commands.contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
+      } on CommandNotFoundException {
+        lastFailedTries[message.author as User] = message;
+
+        rethrow;
+      }
+
+      if (message.author is User && (message.author as User).isBot && !context.command.resolvedOptions.acceptBotCommands!) {
+        return;
+      }
+
+      if (message.author.id == await event.gateway.client.user.get() && !context.command.resolvedOptions.acceptSelfCommands!) {
+        return;
+      }
+
+      logger.fine('Invoking command ${context.command.name} from message $message');
+
+      await context.command.invoke(context);
+    }
+  }
+
   /// A handler for [MessageCreateEvent]s.
   ///
   /// Attach to [NyxxGateway.onMessageCreate].
@@ -149,7 +203,15 @@ class EventManager {
     Match? matchedPrefix = view.skipPattern(prefix, caseInsensitive: commands.options.caseInsensitiveCommands);
 
     if (matchedPrefix != null) {
-      ChatContext context = await commands.contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
+      ChatContext context;
+
+      try {
+        context = await commands.contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
+      } on CommandNotFoundException {
+        lastFailedTries[message.author as User] = message;
+
+        rethrow;
+      }
 
       if (message.author is User && (message.author as User).isBot && !context.command.resolvedOptions.acceptBotCommands!) {
         return;

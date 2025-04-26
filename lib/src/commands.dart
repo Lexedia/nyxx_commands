@@ -202,6 +202,14 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
       }
     });
 
+    client.onMessageUpdate.listen((event) async {
+      try {
+        await eventManager.processMessageUpdateEvent(event);
+      } on CommandsException catch (e) {
+        _onCommandErrorController.add(e);
+      }
+    });
+
     client.onApplicationCommandInteraction.map((event) => event.interaction).listen(
       (interaction) async {
         try {
