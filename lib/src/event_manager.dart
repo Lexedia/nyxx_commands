@@ -24,7 +24,11 @@ class EventManager {
   /// The [CommandsPlugin] this event manager is associated with.
   final CommandsPlugin commands;
 
-  final Map<RuntimeType<dynamic>, Map<ComponentId, Completer<dynamic /* covariant IComponentContext */ >>> _listeners = {};
+  final Map<
+          RuntimeType<dynamic>,
+          Map<ComponentId,
+              Completer<dynamic /* covariant IComponentContext */ >>>
+      _listeners = {};
 
   late final Map<User, Message> lastFailedTries = {};
 
@@ -36,7 +40,8 @@ class EventManager {
 
       // Although 7 seconds may seem a trivial number, increasing to 10 would lead make little to no difference.
       // 7 seconds is enough for a user to decide if they want to really execute the command, or just it was a random message.
-      lastFailedTries.removeWhere((_, m) => m.id.timestamp.toUtc().difference(now) > const Duration(seconds: 7));
+      lastFailedTries.removeWhere((_, m) =>
+          m.id.timestamp.toUtc().difference(now) > const Duration(seconds: 7));
     });
   }
 
@@ -87,14 +92,16 @@ class EventManager {
     }
 
     if (id.allowedUser != null && context.user.id != id.allowedUser) {
-      throw UnhandledInteractionException(context, id.withStatus(ComponentIdStatus.wrongUser));
+      throw UnhandledInteractionException(
+          context, id.withStatus(ComponentIdStatus.wrongUser));
     }
 
     final listenerType = RuntimeType<U>();
     final completer = _listeners[listenerType]?[id];
 
     if (completer == null) {
-      throw UnhandledInteractionException(context, id.withStatus(ComponentIdStatus.noHandlerFound));
+      throw UnhandledInteractionException(
+          context, id.withStatus(ComponentIdStatus.noHandlerFound));
     }
 
     completer.complete(context);
@@ -106,14 +113,16 @@ class EventManager {
   ///
   /// If [id] has an expiration time, the future will complete with an error once that time is
   /// elapsed.
-  Future<ButtonComponentContext> nextButtonEvent(ComponentId id) => _nextComponentEvent(id);
+  Future<ButtonComponentContext> nextButtonEvent(ComponentId id) =>
+      _nextComponentEvent(id);
 
   /// Get a future that completes with a context representing the next interaction on the
   /// select menu with id [id].
   ///
   /// If [id] has an expiration time, the future will complete with an error once that time is
   /// elapsed.
-  Future<SelectMenuContext<List<String>>> nextSelectMenuEvent(ComponentId id) => _nextComponentEvent(id);
+  Future<SelectMenuContext<List<String>>> nextSelectMenuEvent(ComponentId id) =>
+      _nextComponentEvent(id);
 
   /// Stop listening for events from the component with id [id].
   ///
@@ -127,7 +136,9 @@ class EventManager {
   /// The handler for button [MessageComponentInteraction]s.
   ///
   /// Attach to [NyxxGateway.onMessageComponentInteraction] where the component is a button.
-  Future<void> processButtonInteraction(MessageComponentInteraction interaction) => _processComponentEvent(
+  Future<void> processButtonInteraction(
+          MessageComponentInteraction interaction) =>
+      _processComponentEvent(
         interaction,
         commands.contextManager.createButtonComponentContext,
       );
@@ -135,9 +146,12 @@ class EventManager {
   /// The handler for select menu [MessageComponentInteraction]s.
   ///
   /// Attach to [NyxxGateway.onMessageComponentInteraction] where the component is a select menu.
-  Future<void> processSelectMenuInteraction(MessageComponentInteraction interaction) => _processComponentEvent<SelectMenuContext<List<String>>>(
+  Future<void> processSelectMenuInteraction(
+          MessageComponentInteraction interaction) =>
+      _processComponentEvent<SelectMenuContext<List<String>>>(
         interaction,
-        (event) => commands.contextManager.createSelectMenuContext(event, event.data.values!),
+        (event) => commands.contextManager
+            .createSelectMenuContext(event, event.data.values!),
       );
 
   /// A handler for [MessageUpdateEvent]s
@@ -152,32 +166,42 @@ class EventManager {
       return;
     }
 
-    Pattern prefix = await commands
-        .prefix!(MessageCreateEvent(gateway: event.gateway, guildId: event.guildId, member: event.member, mentions: event.mentions ?? [], message: message));
+    Pattern prefix = await commands.prefix!(MessageCreateEvent(
+        gateway: event.gateway,
+        guildId: event.guildId,
+        member: event.member,
+        mentions: event.mentions ?? [],
+        message: message));
     StringView view = StringView(message.content);
 
-    Match? matchedPrefix = view.skipPattern(prefix, caseInsensitive: commands.options.caseInsensitiveCommands);
+    Match? matchedPrefix = view.skipPattern(prefix,
+        caseInsensitive: commands.options.caseInsensitiveCommands);
 
     if (matchedPrefix != null) {
       ChatContext context;
 
       try {
-        context = await commands.contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
+        context = await commands.contextManager
+            .createMessageChatContext(message, view, matchedPrefix.group(0)!);
       } on CommandNotFoundException {
         lastFailedTries[message.author as User] = message;
 
         rethrow;
       }
 
-      if (message.author is User && (message.author as User).isBot && !context.command.resolvedOptions.acceptBotCommands!) {
+      if (message.author is User &&
+          (message.author as User).isBot &&
+          !context.command.resolvedOptions.acceptBotCommands!) {
         return;
       }
 
-      if (message.author.id == await event.gateway.client.user.get() && !context.command.resolvedOptions.acceptSelfCommands!) {
+      if (message.author.id == await event.gateway.client.user.get() &&
+          !context.command.resolvedOptions.acceptSelfCommands!) {
         return;
       }
 
-      logger.fine('Invoking command ${context.command.name} from message $message');
+      logger.fine(
+          'Invoking command ${context.command.name} from message $message');
 
       await context.command.invoke(context);
     }
@@ -200,28 +224,35 @@ class EventManager {
     Pattern prefix = await commands.prefix!(event);
     StringView view = StringView(message.content);
 
-    Match? matchedPrefix = view.skipPattern(prefix, caseInsensitive: commands.options.caseInsensitiveCommands);
+    Match? matchedPrefix = view.skipPattern(prefix,
+        caseInsensitive: commands.options.caseInsensitiveCommands);
 
     if (matchedPrefix != null) {
       ChatContext context;
 
       try {
-        context = await commands.contextManager.createMessageChatContext(message, view, matchedPrefix.group(0)!);
+        context = await commands.contextManager
+            .createMessageChatContext(message, view, matchedPrefix.group(0)!);
       } on CommandNotFoundException {
-        lastFailedTries[message.author as User] = message;
-
+        if (message.author is! WebhookAuthor) {
+          lastFailedTries[message.author as User] = message;
+        }
         rethrow;
       }
 
-      if (message.author is User && (message.author as User).isBot && !context.command.resolvedOptions.acceptBotCommands!) {
+      if (message.author is User &&
+          (message.author as User).isBot &&
+          !context.command.resolvedOptions.acceptBotCommands!) {
         return;
       }
 
-      if (message.author.id == await event.gateway.client.user.get() && !context.command.resolvedOptions.acceptSelfCommands!) {
+      if (message.author.id == await event.gateway.client.user.get() &&
+          !context.command.resolvedOptions.acceptSelfCommands!) {
         return;
       }
 
-      logger.fine('Invoking command ${context.command.name} from message $message');
+      logger.fine(
+          'Invoking command ${context.command.name} from message $message');
 
       await context.command.invoke(context);
     }
@@ -231,9 +262,11 @@ class EventManager {
   ///
   /// This handler takes in a context created by another handler and executes the associated
   /// command.
-  Future<void> processInteractionCommand(InteractionCommandContext context) async {
+  Future<void> processInteractionCommand(
+      InteractionCommandContext context) async {
     if (context.command.resolvedOptions.autoAcknowledgeInteractions!) {
-      Duration? timeout = context.command.resolvedOptions.autoAcknowledgeDuration;
+      Duration? timeout =
+          context.command.resolvedOptions.autoAcknowledgeDuration;
 
       if (timeout == null) {
         final latency = context.client.httpHandler.realLatency;
@@ -283,7 +316,8 @@ class EventManager {
     UserCommand command,
   ) async =>
       processInteractionCommand(
-        await commands.contextManager.createUserContext(interactionEvent, command),
+        await commands.contextManager
+            .createUserContext(interactionEvent, command),
       );
 
   /// A handler for chat [ApplicationCommandInteraction]s where the command is a message command.
@@ -295,7 +329,8 @@ class EventManager {
     MessageCommand command,
   ) async =>
       processInteractionCommand(
-        await commands.contextManager.createMessageContext(interactionEvent, command),
+        await commands.contextManager
+            .createMessageContext(interactionEvent, command),
       );
 
   /// A handler for [ApplicationCommandAutocompleteInteraction]s.
@@ -306,13 +341,17 @@ class EventManager {
   /// [command] is the command the interaction is targeting.
   Future<void> processAutocompleteInteraction(
     ApplicationCommandAutocompleteInteraction interactionEvent,
-    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(AutocompleteContext) callback,
+    FutureOr<Iterable<CommandOptionChoiceBuilder<dynamic>>?> Function(
+            AutocompleteContext)
+        callback,
     ChatCommand command,
   ) async {
-    AutocompleteContext context = await commands.contextManager.createAutocompleteContext(interactionEvent, command);
+    AutocompleteContext context = await commands.contextManager
+        .createAutocompleteContext(interactionEvent, command);
 
     try {
-      Iterable<CommandOptionChoiceBuilder<dynamic>>? choices = await callback(context);
+      Iterable<CommandOptionChoiceBuilder<dynamic>>? choices =
+          await callback(context);
 
       interactionEvent.respond(choices?.toList() ?? []);
     } catch (e) {
