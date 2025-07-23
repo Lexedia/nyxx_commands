@@ -141,7 +141,7 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
   final Map<String, ChatCommandComponent> _dynamicChatCommands = {};
 
   @override
-  Iterable<CommandRegisterable> get children => [..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values, ..._dynamicChatCommands.values];
+  Iterable<CommandRegisterable> get children => {..._userCommands.values, ..._messageCommands.values, ..._chatCommands.values};
 
   @override
   String get name => 'Commands';
