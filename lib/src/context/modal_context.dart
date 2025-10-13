@@ -23,8 +23,8 @@ class ModalContext extends ContextBase with InteractionRespondMixin, Interactive
   ///
   /// Throws a [StateError] if no component with the given [id] exist in the modal.
   String? operator [](String id) => interaction.data.components
-      .expand((component) => component is ActionRowComponent ? component.components : [component])
-      .whereType<TextInputComponent>()
+      .expand((component) => component is ActionRowComponent ? (component as ActionRowComponent).components : [component])
+      .whereType<SubmittedTextInputComponent>()
       .singleWhere((element) => element.customId == id)
       .value;
 }
