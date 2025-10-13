@@ -19,7 +19,6 @@ import 'package:analyzer/dart/analysis/context_builder.dart';
 import 'package:analyzer/dart/analysis/context_locator.dart';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:dart_style/dart_style.dart';
 import 'package:logging/logging.dart';
 import 'package:nyxx_commands/src/errors.dart';
 import 'package:path/path.dart';
@@ -151,14 +150,8 @@ void main(List<String> args) {
 ''');
 
   result = StringBuffer(imports.join('\n'))..write(result.toString());
-
-  if (!formatOutput) {
-    return result.toString();
-  }
-
-  logger.fine('Formatting output');
-
-  return DartFormatter(lineEnding: '\n').format(result.toString());
+  
+  return result.toString();
 }
 
 /// Generates a map literal that maps [id] ids to function metadata that can be used to look up
