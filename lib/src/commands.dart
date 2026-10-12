@@ -306,10 +306,11 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
 
     final (guilds, builder) = cmd;
 
-    final commandResult =
-        guilds.isEmpty ? [await client.commands.create(builder)] : await guilds.nonNulls.map((guildId) => client.guilds[guildId].commands.create(builder)).wait;
+   final commandResult = guilds.isEmpty ? [await client.commands.create(builder)] : await guilds.nonNulls.toSet().map((id) => client.guilds[id].commands.create(builder)).wait;
 
-    registeredCommands.addAll(commandResult);
+    registeredCommands
+      ..removeWhere((c) => commandResult.any((r) => r.id == c.id))
+      ..addAll(commandResult);
 
     logger.info('Created command "${command.name}"');
   }
@@ -568,26 +569,14 @@ class CommandsPlugin extends NyxxPlugin<NyxxGateway> implements CommandGroup<Com
     command.parent = null;
 
     for (final client in attachedClients) {
-      final guildChecks = command.checks.whereType<GuildCheck>();
-      final guilds = guildChecks.singleOrNull?.guildIds ?? [guild];
-
-      final applicationCommand = registeredCommands.singleWhere(
+      final applicationCommand = registeredCommands.where(
         (cmd) =>
-            cmd.manager is GuildApplicationCommandManager &&
-            cmd.name == command.name &&
-            guilds.contains(
-              (cmd.manager as GuildApplicationCommandManager).guildId,
-            ),
-      );
+            cmd.name == command.name && cmd.manager is GuildApplicationCommandManager && (cmd.manager as GuildApplicationCommandManager).guildId == guildId,
+      ).firstOrNull;
+      if (applicationCommand == null) continue;
 
-      for (final id in guilds) {
-        if (id == null) {
-          continue;
-        }
-
-        // evil lexedia be like; import 'dart:cli' show waitFor;
-        client.guilds[id].commands.delete(applicationCommand.id);
-      }
+      registeredCommands.remove(applicationCommand);
+      client.guilds[guildId].commands.delete(applicationCommand.id);
     }
   }
 
